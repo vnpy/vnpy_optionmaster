@@ -11,12 +11,12 @@ from ..time import ANNUAL_DAYS
 
 import numpy as np
 import matplotlib
-matplotlib.use('Qt5Agg')    # noqa
-import matplotlib.pyplot as plt
+matplotlib.use('Qt5Agg')                    # noqa
+import matplotlib.pyplot as plt             # noqa
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas  # noqa
-from matplotlib.figure import Figure
+from matplotlib.figure import Figure        # noqa
 from mpl_toolkits.mplot3d import Axes3D     # noqa
-from pylab import mpl
+from pylab import mpl                       # noqa
 
 plt.style.use("dark_background")
 mpl.rcParams['font.sans-serif'] = ['Microsoft YaHei']   # set font for Chinese
@@ -181,7 +181,14 @@ class OptionVolatilityChart(QtWidgets.QWidget):
 
     def update_curve_visible(self) -> None:
         """"""
+        # Remove old
+        legend: pg.LegendItem = self.impv_chart.legend
+        legend.scene().removeItem(legend)
+
         self.impv_chart.clear()
+
+        # Add new
+        self.impv_chart.addLegend()
 
         for chain_symbol, checkbox in self.chain_checks.items():
             if checkbox.isChecked():
