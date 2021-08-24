@@ -2,9 +2,13 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Callable
 from types import ModuleType
 
+from vnpy.event import EventEngine
+from vnpy.event.engine import Event
+from vnpy.trader.event import EVENT_TICK
 from vnpy.trader.object import ContractData, TickData, TradeData
 from vnpy.trader.constant import Exchange, OptionType, Direction, Offset
 from vnpy.trader.converter import PositionHolding
+from vnpy.trader.utility import extract_vt_symbol
 
 from .time import calculate_days_to_expiry, ANNUAL_DAYS
 
@@ -16,6 +20,7 @@ EVENT_OPTION_ALGO_PRICING = "eOptionAlgoPricing"
 EVENT_OPTION_ALGO_TRADING = "eOptionAlgoTrading"
 EVENT_OPTION_ALGO_STATUS = "eOptionAlgoStatus"
 EVENT_OPTION_ALGO_LOG = "eOptionAlgoLog"
+EVENT_OPTION_RISK_NOTICE = "eOptionRiskNotice"
 
 
 CHAIN_UNDERLYING_MAP = {
@@ -344,9 +349,10 @@ class UnderlyingData(InstrumentData):
 class ChainData:
     """"""
 
-    def __init__(self, chain_symbol: str):
+    def __init__(self, chain_symbol: str, event_engine: EventEngine):
         """"""
         self.chain_symbol: str = chain_symbol
+        self.event_engine: EventEngine = event_engine
 
         self.long_pos: int = 0
         self.short_pos: int = 0
@@ -562,12 +568,26 @@ class ChainData:
         self.underlying.mid_price = call.mid_price - put.mid_price + self.atm_price
         self.update_underlying_tick()
 
+        # 推送合成期货的行情
+        symbol, exchange = extract_vt_symbol(self.underlying.vt_symbol)
+
+        tick = TickData(
+            symbol=symbol,
+            exchange=exchange,
+            datetime=datetime.now(),
+            last_price=self.underlying.mid_price,
+            gateway_name=APP_NAME
+        )
+        event = Event(EVENT_TICK + tick.vt_symbol, tick)
+        self.event_engine.put(event)
+
 
 class PortfolioData:
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, event_engine: EventEngine):
         """"""
         self.name: str = name
+        self.event_engine: EventEngine = event_engine
 
         self.long_pos: int = 0
         self.short_pos: int = 0
@@ -681,7 +701,7 @@ class PortfolioData:
         chain = self._chains.get(chain_symbol, None)
 
         if not chain:
-            chain = ChainData(chain_symbol)
+            chain = ChainData(chain_symbol, self.event_engine)
             chain.set_portfolio(self)
             self._chains[chain_symbol] = chain
 
