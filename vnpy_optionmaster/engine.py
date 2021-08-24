@@ -16,7 +16,7 @@ from vnpy.trader.event import (
     EVENT_TIMER, EVENT_ORDER, EVENT_POSITION
 )
 from vnpy.trader.constant import (
-    Product, Offset, Direction, OrderType, Exchange
+    Product, Offset, Direction, OrderType, Exchange, Status
 )
 from vnpy.trader.converter import OffsetConverter
 from vnpy.trader.utility import extract_vt_symbol, round_to, save_json, load_json
@@ -26,6 +26,7 @@ from .base import (
     EVENT_OPTION_NEW_PORTFOLIO,
     EVENT_OPTION_ALGO_PRICING, EVENT_OPTION_ALGO_TRADING,
     EVENT_OPTION_ALGO_STATUS, EVENT_OPTION_ALGO_LOG,
+    EVENT_OPTION_RISK_NOTICE,
     InstrumentData, PortfolioData
 )
 try:
@@ -69,6 +70,7 @@ class OptionEngine(BaseEngine):
 
         self.hedge_engine: OptionHedgeEngine = OptionHedgeEngine(self)
         self.algo_engine: OptionAlgoEngine = OptionAlgoEngine(self)
+        self.risk_engine: OptionRiskEngine = OptionRiskEngine(self)
 
         self.setting: Dict = {}
 
@@ -103,9 +105,10 @@ class OptionEngine(BaseEngine):
 
             if chain_adjustment_data:
                 for chain in portfolio.chains.values():
-                    chain.underlying_adjustment = chain_adjustment_data.get(
-                        chain.chain_symbol, 0
-                    )
+                    if not chain.use_synthetic:
+                        chain.underlying_adjustment = chain_adjustment_data.get(
+                            chain.chain_symbol, 0
+                        )
 
             # Load pricing impv from setting
             pricing_impvs = data.get("pricing_impvs", {})
@@ -224,7 +227,7 @@ class OptionEngine(BaseEngine):
         """"""
         portfolio = self.portfolios.get(portfolio_name, None)
         if not portfolio:
-            portfolio = PortfolioData(portfolio_name)
+            portfolio = PortfolioData(portfolio_name, self.event_engine)
             self.portfolios[portfolio_name] = portfolio
 
             event = Event(EVENT_OPTION_NEW_PORTFOLIO, portfolio_name)
@@ -611,6 +614,7 @@ class OptionAlgoEngine:
             return
 
         self.underlying_algo_map[algo.underlying.vt_symbol].append(algo)
+        self.active_algos[vt_symbol] = algo
 
         self.event_engine.register(
             EVENT_TICK + algo.option.vt_symbol,
@@ -636,6 +640,8 @@ class OptionAlgoEngine:
 
         buf = self.underlying_algo_map[algo.underlying.vt_symbol]
         buf.remove(algo)
+
+        self.active_algos.pop(vt_symbol)
 
         if not buf:
             self.event_engine.unregister(
@@ -708,3 +714,86 @@ class OptionAlgoEngine:
         """"""
         event = Event(EVENT_OPTION_ALGO_STATUS, algo)
         self.event_engine.put(event)
+
+
+class OptionRiskEngine:
+    """期权风控引擎"""
+
+    def __init__(self, option_engine: OptionEngine) -> None:
+        """"""
+        self.option_engine: OptionEngine = option_engine
+        self.event_engine: EventEngine = option_engine.event_engine
+
+        self.instruments: Dict[str, InstrumentData] = option_engine.instruments
+
+        # 成交持仓比风控
+        self.trade_volume: int = 0
+        self.net_pos: int = 0
+
+        # 委托撤单比风控
+        self.all_orderids: set[str] = set()
+        self.cancel_orderids: set[str] = set()
+
+        # 定时运行参数
+        self.timer_count: int = 0
+        self.timer_trigger: int = 10
+
+        self.register_event()
+
+    def register_event(self) -> None:
+        """"""
+        self.event_engine.register(EVENT_ORDER, self.process_order_event)
+        self.event_engine.register(EVENT_TRADE, self.process_trade_event)
+        self.event_engine.register(EVENT_TIMER, self.process_timer_event)
+
+    def process_order_event(self, event: Event) -> None:
+        """"""
+        order: OrderData = event.data
+        self.all_orderids.add(order.vt_orderid)
+
+        if order.status == Status.CANCELLED:
+            self.cancel_orderids.add(order.vt_orderid)
+
+    def process_trade_event(self, event: Event) -> None:
+        """"""
+        trade: TradeData = event.data
+        
+        self.trade_volume += trade.volume
+    
+    def process_timer_event(self, event: Event) -> None:
+        """"""
+        self.timer_count += 1
+        if self.timer_count < self.timer_trigger:
+            return
+        self.timer_count = 0
+
+        self.net_pos = 0
+        for instrument in self.instruments.values():
+            self.net_pos += instrument.net_pos
+
+        self.put_event()
+
+    def put_event(self) -> None:
+        """推送事件"""
+        order_count: int = len(self.all_orderids)
+        cancel_count: int = len(self.cancel_orderids)
+
+        if self.net_pos:
+            trade_position_ratio: float = self.trade_volume / abs(self.net_pos)
+        else:
+            trade_position_ratio: float = 9999
+
+        if order_count:
+            cancel_order_ratio: float = cancel_count / order_count
+        else:
+            cancel_order_ratio: float = 0
+
+        data = {
+            "trade_volume": self.trade_volume,
+            "net_pos": self.net_pos,
+            "order_count": len(self.all_orderids),
+            "cancel_count": len(self.cancel_orderids),
+            "trade_position_ratio": trade_position_ratio,
+            "cancel_order_ratio": cancel_order_ratio
+        }
+        self.event_engine.put(Event(EVENT_OPTION_RISK_NOTICE, data))
