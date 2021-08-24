@@ -1,4 +1,5 @@
 from typing import Dict
+from pathlib import Path
 
 from vnpy.event import EventEngine, Event
 from vnpy.trader.engine import MainEngine
@@ -6,9 +7,9 @@ from vnpy.trader.ui import QtWidgets, QtCore, QtGui
 from vnpy.trader.constant import Direction, Offset, OrderType
 from vnpy.trader.object import OrderRequest, ContractData, TickData
 from vnpy.trader.event import EVENT_TICK
-from vnpy.trader.utility import get_digits
+from vnpy.trader.utility import get_digits, get_icon_path
 
-from ..base import APP_NAME, EVENT_OPTION_NEW_PORTFOLIO
+from ..base import APP_NAME, EVENT_OPTION_NEW_PORTFOLIO, EVENT_OPTION_RISK_NOTICE
 from ..engine import OptionEngine, PRICING_MODELS
 from .monitor import (
     OptionMarketMonitor, OptionGreeksMonitor, OptionChainMonitor,
@@ -65,6 +66,7 @@ class OptionManager(QtWidgets.QWidget):
         self.scenario_button = QtWidgets.QPushButton("情景分析")
         self.eye_button = QtWidgets.QPushButton("电子眼")
         self.pricing_button = QtWidgets.QPushButton("波动率管理")
+        self.risk_button = QtWidgets.QPushButton("风险监控")
 
         for button in [
             self.market_button,
@@ -75,7 +77,8 @@ class OptionManager(QtWidgets.QWidget):
             self.hedge_button,
             self.scenario_button,
             self.eye_button,
-            self.pricing_button
+            self.pricing_button,
+            self.risk_button
         ]:
             button.setEnabled(False)
 
@@ -92,6 +95,7 @@ class OptionManager(QtWidgets.QWidget):
         hbox.addWidget(self.scenario_button)
         hbox.addWidget(self.pricing_button)
         hbox.addWidget(self.eye_button)
+        hbox.addWidget(self.risk_button)
 
         self.setLayout(hbox)
 
@@ -142,6 +146,7 @@ class OptionManager(QtWidgets.QWidget):
         self.scenario_chart = ScenarioAnalysisChart(self.option_engine, self.portfolio_name)
         self.eye_manager = ElectronicEyeManager(self.option_engine, self.portfolio_name)
         self.pricing_manager = PricingVolatilityManager(self.option_engine, self.portfolio_name)
+        self.risk_widget = OptionRiskWidget(self.option_engine)
 
         self.market_monitor.itemDoubleClicked.connect(self.manual_trader.update_symbol)
 
@@ -154,6 +159,7 @@ class OptionManager(QtWidgets.QWidget):
         self.hedge_button.clicked.connect(self.hedge_widget.show)
         self.eye_button.clicked.connect(self.eye_manager.show)
         self.pricing_button.clicked.connect(self.pricing_manager.show)
+        self.risk_button.clicked.connect(self.risk_widget.show)
 
         for button in [
             self.market_button,
@@ -164,7 +170,8 @@ class OptionManager(QtWidgets.QWidget):
             self.scenario_button,
             self.hedge_button,
             self.eye_button,
-            self.pricing_button
+            self.pricing_button,
+            self.risk_button
         ]:
             button.setEnabled(True)
 
@@ -180,6 +187,7 @@ class OptionManager(QtWidgets.QWidget):
             self.scenario_chart.close()
             self.eye_manager.close()
             self.pricing_manager.close()
+            self.risk_widget.close()
 
         event.accept()
 
@@ -533,7 +541,6 @@ class OptionManualTrader(QtWidgets.QWidget):
         if tick:
             self.update_tick(tick)
 
-        print(EVENT_TICK + vt_symbol)
         self.event_engine.register(EVENT_TICK + vt_symbol, self.process_tick_event)
 
     def create_label(
@@ -641,16 +648,8 @@ class OptionHedgeWidget(QtWidgets.QWidget):
         """"""
         self.setWindowTitle("Delta对冲")
 
-        underlying_symbols = []
         portfolio = self.option_engine.get_portfolio(self.portfolio_name)
-
-        for chain in portfolio.chains.values():
-            underlying_symbol = chain.underlying.symbol
-            self.symbol_map[underlying_symbol] = chain.underlying.vt_symbol
-
-            if underlying_symbol not in underlying_symbols:
-                underlying_symbols.append(underlying_symbol)
-
+        underlying_symbols = [vs for vs in portfolio.underlyings.keys() if "LOCAL" not in vs]
         underlying_symbols.sort()
 
         self.symbol_combo = QtWidgets.QComboBox()
@@ -743,3 +742,106 @@ class OptionHedgeWidget(QtWidgets.QWidget):
         self.payup_spin.setEnabled(status)
         self.trigger_spin.setEnabled(status)
         self.stop_button.setEnabled(not status)
+
+
+class OptionRiskWidget(QtWidgets.QWidget):
+    """期权风险监控组件"""
+
+    signal = QtCore.pyqtSignal(Event)
+
+    def __init__(self, option_engine: OptionEngine):
+        """"""
+        super().__init__()
+
+        self.event_engine: EventEngine = option_engine.event_engine
+
+        self.cancel_order_limit: float = 0.9
+        self.trade_position_limit: float = 2
+
+        self.tray_icon: QtWidgets.QSystemTrayIcon = None
+
+        self.init_ui()
+        self.register_event()
+
+    def init_ui(self) -> None:
+        """"""
+        self.setWindowTitle("风险监控")
+        self.resize(400, 200)
+
+        self.trade_volume_label = QtWidgets.QLabel("0")
+        self.net_pos_label = QtWidgets.QLabel("0")
+        self.order_count_label = QtWidgets.QLabel("0")
+        self.cancel_count_label = QtWidgets.QLabel("0")
+        self.trade_position_ratio_label = QtWidgets.QLabel("0")
+        self.cancel_order_ratio_label = QtWidgets.QLabel("0")
+
+        self.trade_position_limit_spin = QtWidgets.QDoubleSpinBox()
+        self.trade_position_limit_spin.setDecimals(1)
+        self.trade_position_limit_spin.setRange(0, 100)
+        self.trade_position_limit_spin.setValue(self.trade_position_limit)
+        self.trade_position_limit_spin.valueChanged.connect(self.set_trade_position_limit)
+
+        self.cancel_order_ratio_spin = QtWidgets.QDoubleSpinBox()
+        self.cancel_order_ratio_spin.setDecimals(1)
+        self.cancel_order_ratio_spin.setRange(0, 1)
+        self.cancel_order_ratio_spin.setValue(self.cancel_order_limit)
+        self.cancel_order_ratio_spin.valueChanged.connect(self.set_cancel_order_limit)
+
+        form = QtWidgets.QFormLayout()
+        form.addRow("成交持仓限制", self.trade_position_limit_spin)
+        form.addRow("撤单委托限制", self.cancel_order_ratio_spin)
+        form.addRow(QtWidgets.QLabel(" "))
+        form.addRow("总成交量", self.trade_volume_label)
+        form.addRow("净持仓量", self.net_pos_label)
+        form.addRow("成交持仓比", self.trade_position_ratio_label)
+        form.addRow("委托笔数", self.order_count_label)
+        form.addRow("撤单笔数", self.cancel_count_label)
+        form.addRow("撤单委托比", self.cancel_order_ratio_label)
+
+        self.setLayout(form)
+
+        icon_path = Path(__file__).parent.joinpath("option.ico")
+        icon = QtGui.QIcon(str(icon_path))
+        self.tray_icon = QtWidgets.QSystemTrayIcon()
+        self.tray_icon.setIcon(icon)
+        self.tray_icon.setVisible(True)
+
+    def register_event(self) -> None:
+        """"""
+        self.signal.connect(self.process_event)
+        self.event_engine.register(EVENT_OPTION_RISK_NOTICE, self.signal.emit)
+
+    def process_event(self, event: Event) -> None:
+        """"""
+        data = event.data
+        self.trade_volume_label.setText(str(data["trade_volume"]))
+        self.net_pos_label.setText(str(data["net_pos"]))
+        self.order_count_label.setText(str(data["order_count"]))
+        self.cancel_count_label.setText(str(data["cancel_count"]))
+        self.trade_position_ratio_label.setText(f'{data["trade_position_ratio"]:.2f}')
+        self.cancel_order_ratio_label.setText(f'{data["cancel_order_ratio"]:.2f}')
+
+        texts = []
+        if data["trade_position_ratio"] >= self.trade_position_limit:
+            ratio = data["trade_position_ratio"]
+            texts.append(f"当前交易持仓比{ratio}超过限制{self.trade_position_limit}！")
+
+        if data["cancel_order_ratio"] >= self.cancel_order_limit:
+            ratio = data["cancel_order_ratio"]
+            texts.append(f"当前撤单委托比{ratio}超过限制{self.cancel_order_limit}！")
+
+        if texts:
+            msg = "\n\n".join(texts)
+            self.show_warning(msg)
+
+    def set_cancel_order_limit(self, limit: float) -> None:
+        """设置撤单委托比限制"""
+        self.cancel_order_limit = limit
+
+    def set_trade_position_limit(self, limit: float) -> None:
+        """设置成交持仓比限制"""
+        self.trade_position_limit = limit
+
+    def show_warning(self, msg) -> None:
+        """显示提示信息"""
+        self.tray_icon.showMessage("风险提示", msg)
