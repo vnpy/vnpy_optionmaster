@@ -218,7 +218,6 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         {"name": "direction", "display": "方向", "cell": AlgoDirectionCombo},
         {"name": "pricing_active", "display": "定价", "cell": AlgoPricingButton},
         {"name": "trading_active", "display": "交易", "cell": AlgoTradingButton},
-
     ]
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str):
@@ -476,7 +475,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
 
         params = {}
         params["price_spread"] = cells["price_spread"].get_value()
-        params["volatility_spread"] = cells["volatility_spread"].get_value() / 100
+        params["volatility_spread"] = cells["volatility_spread"].get_value()
 
         self.algo_engine.start_algo_pricing(vt_symbol, params)
 
@@ -735,21 +734,27 @@ class PricingVolatilityManager(QtWidgets.QWidget):
             table = QtWidgets.QTableWidget()
             table.setEditTriggers(table.NoEditTriggers)
             table.verticalHeader().setVisible(False)
-            table.setColumnCount(4)
             table.setRowCount(len(chain.indexes))
-            table.setHorizontalHeaderLabels([
-                "行权价",
-                "中值隐波",
-                "定价隐波",
-                "执行拟合"
-            ])
             table.horizontalHeader().setSectionResizeMode(
                 QtWidgets.QHeaderView.Stretch
             )
 
+            labels = [
+                "行权价",
+                "OTM隐波",
+                "CALL隐波",
+                "PUT隐波",
+                "定价隐波",
+                "执行拟合"
+            ]
+            table.setColumnCount(len(labels))
+            table.setHorizontalHeaderLabels(labels)
+
             for row, index in enumerate(chain.indexes):
                 index_cell = IndexCell(index)
-                mid_impv_cell = MonitorCell("")
+                otm_impv_cell = MonitorCell("")
+                call_impv_cell = MonitorCell("")
+                put_impv_cell = MonitorCell("")
 
                 set_func = partial(
                     self.set_pricing_impv,
@@ -770,12 +775,16 @@ class PricingVolatilityManager(QtWidgets.QWidget):
                 check_widget.setLayout(check_hbox)
 
                 table.setItem(row, 0, index_cell)
-                table.setItem(row, 1, mid_impv_cell)
-                table.setCellWidget(row, 2, pricing_impv_spin)
-                table.setCellWidget(row, 3, check_widget)
+                table.setItem(row, 1, otm_impv_cell)
+                table.setItem(row, 2, call_impv_cell)
+                table.setItem(row, 3, put_impv_cell)
+                table.setCellWidget(row, 4, pricing_impv_spin)
+                table.setCellWidget(row, 5, check_widget)
 
                 cells = {
-                    "mid_impv": mid_impv_cell,
+                    "otm_impv": otm_impv_cell,
+                    "call_impv": call_impv_cell,
+                    "put_impv": put_impv_cell,
                     "pricing_impv": pricing_impv_spin,
                     "check": check
                 }
@@ -814,8 +823,8 @@ class PricingVolatilityManager(QtWidgets.QWidget):
 
             self.update_pricing_impv(chain_symbol)
 
-            self.default_foreground = mid_impv_cell.foreground()
-            self.default_background = mid_impv_cell.background()
+            self.default_foreground = otm_impv_cell.foreground()
+            self.default_background = otm_impv_cell.background()
 
             table.resizeRowsToContents()
 
@@ -828,7 +837,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
     def process_timer_event(self, event: Event) -> None:
         """"""
         for chain_symbol in self.chain_symbols:
-            self.update_mid_impv(chain_symbol)
+            self.update_chain_impv(chain_symbol)
 
     def reset_pricing_impv(self, chain_symbol: str) -> None:
         """
@@ -939,19 +948,23 @@ class PricingVolatilityManager(QtWidgets.QWidget):
             if cells:
                 cells["pricing_impv"].setValue(value)
 
-    def update_mid_impv(self, chain_symbol: str) -> None:
+    def update_chain_impv(self, chain_symbol: str) -> None:
         """"""
         chain = self.portfolio.get_chain(chain_symbol)
         atm_index = chain.atm_index
 
         for index in chain.indexes:
+            call = chain.calls[index]
+            put = chain.puts[index]
             if index >= atm_index:
-                otm = chain.calls[index]
+                otm = call
             else:
-                otm = chain.puts[index]
+                otm = put
 
             cells = self.cells[(chain_symbol, index)]
-            cells["mid_impv"].setText(f"{otm.mid_impv:.1%}")
+            cells["otm_impv"].setText(f"{otm.mid_impv:.1%}")
+            cells["call_impv"].setText(f"{call.mid_impv:.1%}")
+            cells["put_impv"].setText(f"{put.mid_impv:.1%}")
 
         current_atm_index = self.chain_atm_index.get(chain_symbol, "")
         if current_atm_index == atm_index:
@@ -960,9 +973,14 @@ class PricingVolatilityManager(QtWidgets.QWidget):
 
         if current_atm_index:
             old_cells = self.cells[(chain_symbol, current_atm_index)]
-            old_cells["mid_impv"].setForeground(self.default_foreground)
-            old_cells["mid_impv"].setBackground(self.default_background)
 
-        new_cells = self.cells[(chain_symbol, atm_index)]
-        new_cells["mid_impv"].setForeground(COLOR_BLACK)
-        new_cells["mid_impv"].setBackground(COLOR_WHITE)
+            for field in ["otm_impv", "call_impv", "put_impv"]:
+                old_cells[field].setForeground(COLOR_WHITE)
+                old_cells[field].setBackground(self.default_background)
+
+        if atm_index:
+            new_cells = self.cells[(chain_symbol, atm_index)]
+
+            for field in ["otm_impv", "call_impv", "put_impv"]:
+                new_cells[field].setForeground(COLOR_BLACK)
+                new_cells[field].setBackground(COLOR_WHITE)
