@@ -152,7 +152,11 @@ class ElectronicEyeAlgo:
 
     def on_trade(self, trade: TradeData) -> None:
         """"""
-        self.write_log(f"委托成交，{trade.direction} {trade.offset} {trade.volume}@{trade.price}")
+        msg = (
+            f"委托成交，{trade.direction} {trade.offset} {trade.volume}@{trade.price}，"
+            f"委托号[{trade.vt_orderid}，成交号[{trade.vt_tradeid}]"
+        )
+        self.write_log(msg)
 
     def on_timer(self) -> None:
         """"""
@@ -179,7 +183,7 @@ class ElectronicEyeAlgo:
             volume
         )
 
-        self.write_log(f"发出委托，{direction} {offset} {volume}@{price}")
+        self.write_log(f"发出委托，{direction} {offset} {volume}@{price} [{vt_orderid}]")
 
         return vt_orderid
 
@@ -190,7 +194,8 @@ class ElectronicEyeAlgo:
 
     def sell(self, price: float, volume: int) -> None:
         """"""
-        self.send_order(Direction.SHORT, Offset.CLOSE, price, volume)
+        vt_orderid = self.send_order(Direction.SHORT, Offset.CLOSE, price, volume)
+        self.short_active_orderids.add(vt_orderid)
 
     def short(self, price: float, volume: int) -> None:
         """"""
@@ -199,7 +204,8 @@ class ElectronicEyeAlgo:
 
     def cover(self, price: float, volume: int) -> None:
         """"""
-        self.send_order(Direction.LONG, Offset.CLOSE, price, volume)
+        vt_orderid = self.send_order(Direction.LONG, Offset.CLOSE, price, volume)
+        self.long_active_orderids.add(vt_orderid)
 
     def send_long(self, price: float, volume: int) -> None:
         """"""
@@ -230,6 +236,7 @@ class ElectronicEyeAlgo:
 
     def cancel_order(self, vt_orderid: str) -> None:
         """"""
+        self.write_log(f"委托撤单：[{vt_orderid}]")
         self.algo_engine.cancel_order(vt_orderid)
 
     def cancel_long(self) -> None:
@@ -268,7 +275,7 @@ class ElectronicEyeAlgo:
         # Calculate spread
         algo_spread = max(
             self.price_spread,
-            self.volatility_spread * option.cash_vega
+            self.volatility_spread * option.cash_vega / option.size
         )
         half_spread = algo_spread / 2
 
