@@ -7,7 +7,7 @@ from vnpy.trader.ui import QtWidgets, QtCore, QtGui
 from vnpy.trader.constant import Direction, Offset, OrderType
 from vnpy.trader.object import OrderRequest, ContractData, TickData
 from vnpy.trader.event import EVENT_TICK
-from vnpy.trader.utility import get_digits, get_icon_path
+from vnpy.trader.utility import get_digits
 
 from ..base import APP_NAME, EVENT_OPTION_NEW_PORTFOLIO, EVENT_OPTION_RISK_NOTICE
 from ..engine import OptionEngine, PRICING_MODELS

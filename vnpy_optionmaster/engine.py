@@ -757,9 +757,9 @@ class OptionRiskEngine:
     def process_trade_event(self, event: Event) -> None:
         """"""
         trade: TradeData = event.data
-        
+
         self.trade_volume += trade.volume
-    
+
     def process_timer_event(self, event: Event) -> None:
         """"""
         self.timer_count += 1

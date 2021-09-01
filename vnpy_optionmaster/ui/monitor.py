@@ -382,53 +382,45 @@ class OptionGreeksMonitor(MonitorTable):
         self.setHorizontalHeaderLabels(labels)
 
         # Init cells
-        row_names = [self.portfolio_name]
-        row_names.append("")
+        row_settings = []
+        row_settings.append((self.portfolio_name, "组合"))
+        row_settings.append(None)
 
         underlying_symbols = list(portfolio.underlyings.keys())
         underlying_symbols.sort()
-        row_names.extend(underlying_symbols)
-        row_names.append("")
+        for underlying_symbol in underlying_symbols:
+            row_settings.append((underlying_symbol, "标的"))
+        row_settings.append(None)
 
         chain_symbols = list(portfolio.chains.keys())
         chain_symbols.sort()
-        row_names.extend(chain_symbols)
-        row_names.append("")
+        for chain_symbol in chain_symbols:
+            row_settings.append((chain_symbol, "期权链"))
+        row_settings.append(None)
 
         option_symbols = list(portfolio.options.keys())
         option_symbols.sort()
-        row_names.extend(option_symbols)
+        for option_symbol in option_symbols:
+            row_settings.append((option_symbol, "期权"))
 
-        type_map = {}
-        type_map[self.portfolio_name] = "组合"
-
-        for symbol in underlying_symbols:
-            type_map[symbol] = "标的"
-
-        for symbol in chain_symbols:
-            type_map[symbol] = "期权链"
-
-        for symbol in option_symbols:
-            type_map[symbol] = "期权"
-
-        for row, row_name in enumerate(row_names):
-            if not row_name:
+        for row, row_key in enumerate(row_settings):
+            if not row_key:
                 continue
+            row_name, type_name = row_key
 
-            row_cells = {}
-
-            type_cell = MonitorCell(type_map[row_name])
+            type_cell = MonitorCell(type_name)
             self.setItem(row, 0, type_cell)
 
             name = row_name.split(".")[0]
             name_cell = MonitorCell(name)
             self.setItem(row, 1, name_cell)
 
+            row_cells = {}
             for column, d in enumerate(self.headers):
                 cell = d["cell"]()
                 self.setItem(row, column + 2, cell)
                 row_cells[d["name"]] = cell
-            self.cells[row_name] = row_cells
+            self.cells[row_key] = row_cells
 
             if row_name != self.portfolio_name:
                 self.hideRow(row)
@@ -473,33 +465,37 @@ class OptionGreeksMonitor(MonitorTable):
     def update_underlying_tick(self, vt_symbol: str) -> None:
         """"""
         underlying = self.option_engine.get_instrument(vt_symbol)
-        self.update_row(vt_symbol, underlying)
+        self.update_row(vt_symbol, "标的", underlying)
 
         for chain in underlying.chains.values():
-            self.update_row(chain.chain_symbol, chain)
+            self.update_row(chain.chain_symbol, "期权链", chain)
 
             for option in chain.options.values():
-                self.update_row(option.vt_symbol, option)
+                self.update_row(option.vt_symbol, "期权", option)
 
         portfolio = underlying.portfolio
-        self.update_row(portfolio.name, portfolio)
+        self.update_row(portfolio.name, "组合", portfolio)
 
     def update_pos(self, vt_symbol: str) -> None:
         """"""
         instrument = self.option_engine.get_instrument(vt_symbol)
-        self.update_row(vt_symbol, instrument)
+        if isinstance(instrument, OptionData):
+            self.update_row(vt_symbol, "期权", instrument)
+        else:
+            self.update_row(vt_symbol, "标的", instrument)
 
         # For option, greeks of chain also needs to be updated.
         if isinstance(instrument, OptionData):
             chain = instrument.chain
-            self.update_row(chain.chain_symbol, chain)
+            self.update_row(chain.chain_symbol, "期权链", chain)
 
         portfolio = instrument.portfolio
-        self.update_row(portfolio.name, portfolio)
+        self.update_row(portfolio.name, "组合", portfolio)
 
-    def update_row(self, row_name: str, row_data: ROW_DATA) -> None:
+    def update_row(self, row_name: str, type_name: str, row_data: ROW_DATA) -> None:
         """"""
-        row_cells = self.cells[row_name]
+        row_key = (row_name, type_name)
+        row_cells = self.cells[row_key]
         row = self.row(row_cells["long_pos"])
 
         # Hide rows with no existing position
