@@ -756,7 +756,7 @@ class OptionRiskWidget(QtWidgets.QWidget):
         self.event_engine: EventEngine = option_engine.event_engine
 
         self.cancel_order_limit: float = 0.9
-        self.trade_position_limit: float = 2
+        self.trade_position_limit: float = 99999
 
         self.tray_icon: QtWidgets.QSystemTrayIcon = None
 
@@ -777,7 +777,7 @@ class OptionRiskWidget(QtWidgets.QWidget):
 
         self.trade_position_limit_spin = QtWidgets.QDoubleSpinBox()
         self.trade_position_limit_spin.setDecimals(1)
-        self.trade_position_limit_spin.setRange(0, 100)
+        self.trade_position_limit_spin.setRange(0, 100000)
         self.trade_position_limit_spin.setValue(self.trade_position_limit)
         self.trade_position_limit_spin.valueChanged.connect(self.set_trade_position_limit)
 
