@@ -85,7 +85,7 @@ class OptionVolatilityChart(QtWidgets.QWidget):
         # Create graphics window
         pg.setConfigOptions(antialias=True)
 
-        graphics_window = pg.GraphicsWindow()
+        graphics_window = pg.GraphicsLayoutWidget()
         self.impv_chart = graphics_window.addPlot(title="隐含波动率曲线")
         self.impv_chart.showGrid(x=True, y=True)
         self.impv_chart.setLabel("left", "波动率")
