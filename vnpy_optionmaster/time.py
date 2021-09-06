@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta
-import trading_calendars
+import exchange_calendars
 
 ANNUAL_DAYS = 240
 
 # Get public holidays data from Shanghai Stock Exchange
-cn_calendar = trading_calendars.get_calendar('XSHG')
+cn_calendar = exchange_calendars.get_calendar('XSHG')
 holidays = [x.to_pydatetime() for x in cn_calendar.precomputed_holidays]
 
 # Filter future public holidays
