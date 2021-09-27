@@ -694,8 +694,7 @@ class OptionHedgeWidget(QtWidgets.QWidget):
 
     def start(self) -> None:
         """"""
-        symbol = self.symbol_combo.currentText()
-        vt_symbol = self.symbol_map[symbol]
+        vt_symbol = self.symbol_combo.currentText()
         timer_trigger = self.trigger_spin.value()
         delta_target = self.target_spin.value()
         delta_range = self.range_spin.value()
