@@ -1,8 +1,6 @@
 from typing import Dict, List
 
 import pyqtgraph as pg
-import pyqtgraph.opengl as gl
-from pyqtgraph.Qt import QtGui
 
 from vnpy.trader.ui import QtWidgets, QtCore
 from vnpy.trader.event import EVENT_TIMER
@@ -12,8 +10,15 @@ from ..engine import OptionEngine, Event
 from ..time import ANNUAL_DAYS
 
 import numpy as np
+import matplotlib
+matplotlib.use('Qt5Agg')                    # noqa
+import matplotlib.pyplot as plt             # noqa
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas  # noqa
+from matplotlib.figure import Figure        # noqa
+from mpl_toolkits.mplot3d import Axes3D     # noqa
 from pylab import mpl                       # noqa
 
+plt.style.use("dark_background")
 mpl.rcParams['font.sans-serif'] = ['Microsoft YaHei']   # set font for Chinese
 mpl.rcParams['axes.unicode_minus'] = False
 
@@ -233,9 +238,14 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
         button = QtWidgets.QPushButton("执行分析")
         button.clicked.connect(self.run_analysis)
 
-        self.w = gl.GLViewWidget()
-        self.w.setMinimumHeight(500)
-        self.w.setMinimumWidth(500)
+        # Create charts
+        fig = Figure()
+        canvas = FigureCanvas(fig)
+
+        self.ax = fig.gca(projection="3d")
+        self.ax.set_xlabel("价格涨跌 %")
+        self.ax.set_ylabel("波动率涨跌 %")
+        self.ax.set_zlabel("盈亏")
 
         # Set layout
         hbox1 = QtWidgets.QHBoxLayout()
@@ -256,7 +266,7 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
         vbox = QtWidgets.QVBoxLayout()
         vbox.addLayout(hbox1)
         vbox.addLayout(hbox2)
-        vbox.addWidget(self.w)
+        vbox.addWidget(canvas)
 
         self.setLayout(vbox)
 
@@ -370,161 +380,22 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
 
     def update_chart(
         self,
-        impv_changes: np.array,
         price_changes: np.array,
+        impv_changes: np.array,
         target_data: List[List[float]],
         target_name: str
     ) -> None:
+        """"""
+        self.ax.clear()
 
-        self.w.clear()
-        self.w.reset()
-        self.w.show()
-        self.w.setWindowTitle(target_name)
-        self.w.setCameraPosition(distance=85)
-        self.w.pan(dx=0, dy=0, dz=15, relative="global")
+        price_changes, impv_changes = np.meshgrid(price_changes, impv_changes)
 
-        # cal zoom percentage
-        limit_price_changes = int(price_changes[0])
-        zoom_x = self.zoom(limit_price_changes)
-        space_x = np.linspace(-zoom_x, zoom_x, 9)
-
-        limit_impv_changes = int(impv_changes[0])
-        zoom_y = self.zoom(limit_impv_changes)
-        space_y = np.linspace(-zoom_y, zoom_y, 9)
-
-        z = np.array(target_data)
-        max_z = np.max(z)
-        min_z = np.min(z)
-        space_z = np.linspace(min_z, max_z, 9)
-
-        # init gril
-        self.init_gril(space_x, space_y, space_z, target_name)
-
-        # draw
-        zoom = max_z - min_z
-        if max_z or min_z:
-            z = z / zoom * 32
-        else:
-            z = z * 0
-
-        p = gl.GLSurfacePlotItem(
-            x=-price_changes / zoom_x * 20,
-            y=impv_changes / zoom_y * 20,
-            z=z, shader="normalColor",
-            computeNormals=False,
-            smooth=False)
-        p.translate(0, 0, -np.min(z) + 4)
-
-        self.w.addItem(p)
-        self.show()
-
-    def init_gril(self, space_x, space_y, space_z, target_name) -> None:
-
-        gx = gl.GLGridItem()
-        gx.setSize(40, 40, 0)
-        gx.setSpacing(4, 5, 0)
-        gx.rotate(90, 0, 1, 0)
-        gx.translate(-20, 0, 20)
-        self.w.addItem(gx)
-
-        gy = gl.GLGridItem()
-        gy.setSize(40, 40, 0)
-        gy.setSpacing(5, 4, 0)
-        gy.rotate(90, 1, 0, 0)
-        gy.translate(0, -20, 20)
-        self.w.addItem(gy)
-
-        gz = gl.GLGridItem()
-        gz.setSize(40, 40, 0)
-        gz.setSpacing(5, 5, 0)
-        gz.translate(0, 0, 0)
-        self.w.addItem(gz)
-
-        self.add_labels_ticks(space_x, space_y, space_z, target_name)
-
-    def add_labels_ticks(self, space_x, space_y, space_z, target_name) -> None:
-        self.xpos = [(-20.0, 20.0, -2.0),
-                     (-15.0, 20.0, -2.0),
-                     (-10.0, 20.0, -2.0),
-                     (-5.0, 20.0, -2.0),
-                     (0.0, 20.0, -2.0),
-                     (5.0, 20.0, -2.0),
-                     (10.0, 20.0, -2.0),
-                     (15.0, 20.0, -2.0),
-                     (20.0, 20.0, -2.0)]
-        self.xpos.reverse()
-
-        self.ypos = [(21.0, -21.0, -2.0),
-                     (21.0, -16.0, -2.0),
-                     (21.0, -11.0, -2.0),
-                     (21.0, -6.0, -2.0),
-                     (21.0, -1.0, -2.0),
-                     (21.0, 4.0, -2.0),
-                     (21.0, 9.0, -2.0),
-                     (21.0, 14.0, -2.0),
-                     (21.0, 19.0, -2.0)]
-
-        self.zpos = [(-21.0, 21.0, 5.0),
-                     (-21.0, 21.0, 9.0),
-                     (-21.0, 21.0, 13.0),
-                     (-21.0, 21.0, 17.0),
-                     (-21.0, 21.0, 21.0),
-                     (-21.0, 21.0, 25.0),
-                     (-21.0, 21.0, 29.0),
-                     (-21.0, 21.0, 33.0),
-                     (-21.0, 21.0, 37.0)]
-
-        self.labels_pos = [(28.0, -1.0, -2.0),
-                           (0.0, 22.0, -2.0),
-                           (-21.0, 26.0, 21.0)]
-
-        self.xtext = [str(int(i)) for i in space_x]
-
-        self.ytext = [str(int(i)) for i in space_y]
-
-        self.ztext = [str(int(i)) for i in space_z]
-
-        self.labels_text = ["价格涨跌%", "波动率涨跌%", target_name]
-
-        font = QtGui.QFont("Times", 10)
-
-        for i in range(9):
-            val = gl.GLTextItem()
-            val.setData(pos=self.xpos[i], color=(255, 255, 255, 255), text=self.xtext[i], font=font)
-            self.w.addItem(val)
-
-        for i in range(9):
-            val = gl.GLTextItem()
-            val.setData(pos=self.ypos[i], color=(255, 255, 255, 255), text=self.ytext[i], font=font)
-            self.w.addItem(val)
-
-        for i in range(9):
-            val = gl.GLTextItem()
-            val.setData(pos=self.zpos[i], color=(255, 255, 255, 255), text=self.ztext[i], font=font)
-            self.w.addItem(val)
-
-        for i in range(3):
-            val = gl.GLTextItem()
-            val.setData(pos=self.labels_pos[i], color=(255, 255, 255, 255), text=self.labels_text[i], font=font)
-            self.w.addItem(val)
-
-    def zoom(self, length) -> int:
-        length = abs(length)
-        if length < 8:
-            return 8
-        elif length < 16:
-            return 16
-        elif length < 20:
-            return 20
-        elif length < 24:
-            return 24
-        elif length < 32:
-            return 32
-        elif length < 40:
-            return 40
-        elif length < 60:
-            return 60
-        elif length < 80:
-            return 80
-        else:
-            return 100
+        self.ax.set_zlabel(target_name)
+        self.ax.plot_surface(
+            X=price_changes,
+            Y=impv_changes,
+            Z=np.array(target_data),
+            rstride=1,
+            cstride=1,
+            cmap=matplotlib.cm.coolwarm
+        )
