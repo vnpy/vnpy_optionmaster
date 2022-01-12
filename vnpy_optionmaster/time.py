@@ -17,7 +17,7 @@ def calculate_days_to_expiry(option_expiry: datetime) -> int:
     current_dt = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     days = 1
 
-    while current_dt <= option_expiry:
+    while current_dt < option_expiry:
         current_dt += timedelta(days=1)
 
         # Ignore weekends
