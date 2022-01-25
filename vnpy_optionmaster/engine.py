@@ -575,14 +575,14 @@ class OptionAlgoEngine:
         tick: TickData = event.data
 
         for algo in self.underlying_algo_map[tick.vt_symbol]:
-            algo.on_underlying_tick(algo)
+            algo.on_underlying_tick(tick)
 
     def process_option_tick_event(self, event: Event) -> None:
         """"""
         tick: TickData = event.data
 
         algo = self.algos[tick.vt_symbol]
-        algo.on_option_tick(algo)
+        algo.on_option_tick(tick)
 
     def process_order_event(self, event: Event) -> None:
         """"""
