@@ -34,4 +34,4 @@ class OptionMasterApp(BaseApp):
     display_name = "期权交易"
     engine_class = OptionEngine
     widget_name = "OptionManager"
-    icon_name = "option.ico"
+    icon_name = str(app_path.joinpath("ui", "option.ico"))
