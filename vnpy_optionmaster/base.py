@@ -47,11 +47,6 @@ CHAIN_UNDERLYING_MAP = {
     "TA.CZCE": "TA",
     "MA.CZCE": "MA",
     "RM.CZCE": "RM",
-
-    # Crypto Options
-    "BTC.DERIBIT": "BTC-PERPETUAL",
-    "BTC-USD.OKEX": "BTC-USD-SWAP",
-    "BTC.HUOBI": "BTC-USD",
 }
 
 
@@ -174,7 +169,7 @@ class OptionData(InstrumentData):
             return
         underlying_price += self.underlying_adjustment
 
-        # Adjustment for crypto inverse option contract
+        # Adjustment for inverse option contract
         if self.inverse:
             ask_price = self.tick.ask_price_1 * underlying_price
             bid_price = self.tick.bid_price_1 * underlying_price
@@ -226,7 +221,7 @@ class OptionData(InstrumentData):
         self.cash_theta = theta * self.size
         self.cash_vega = vega * self.size
 
-        # Adjustment for crypto inverse option contract
+        # Adjustment for inverse option contract
         if self.inverse:
             self.cash_delta /= underlying_price
             self.cash_gamma /= underlying_price
@@ -257,7 +252,7 @@ class OptionData(InstrumentData):
             self.option_type
         )
 
-        # Adjustment for crypto inverse option contract
+        # Adjustment for inverse option contract
         if self.inverse:
             ref_price /= underlying_price
 
@@ -549,7 +544,7 @@ class ChainData:
         atm_call = self.calls[self.atm_index]
         atm_put = self.puts[self.atm_index]
 
-        # Adjustment for crypto inverse option contract
+        # Adjustment for inverse option contract
         if self.inverse:
             call_price = atm_call.mid_price * self.underlying.mid_price
             put_price = atm_put.mid_price * self.underlying.mid_price
