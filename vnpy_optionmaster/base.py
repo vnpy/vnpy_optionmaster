@@ -13,17 +13,17 @@ from vnpy.trader.utility import extract_vt_symbol
 from .time import calculate_days_to_expiry, ANNUAL_DAYS
 
 
-APP_NAME = "OptionMaster"
+APP_NAME: str = "OptionMaster"
 
-EVENT_OPTION_NEW_PORTFOLIO = "eOptionNewPortfolio"
-EVENT_OPTION_ALGO_PRICING = "eOptionAlgoPricing"
-EVENT_OPTION_ALGO_TRADING = "eOptionAlgoTrading"
-EVENT_OPTION_ALGO_STATUS = "eOptionAlgoStatus"
-EVENT_OPTION_ALGO_LOG = "eOptionAlgoLog"
-EVENT_OPTION_RISK_NOTICE = "eOptionRiskNotice"
+EVENT_OPTION_NEW_PORTFOLIO: str = "eOptionNewPortfolio"
+EVENT_OPTION_ALGO_PRICING: str = "eOptionAlgoPricing"
+EVENT_OPTION_ALGO_TRADING: str = "eOptionAlgoTrading"
+EVENT_OPTION_ALGO_STATUS: str = "eOptionAlgoStatus"
+EVENT_OPTION_ALGO_LOG: str = "eOptionAlgoLog"
+EVENT_OPTION_RISK_NOTICE: str = "eOptionRiskNotice"
 
 
-CHAIN_UNDERLYING_MAP = {
+CHAIN_UNDERLYING_MAP: dict = {
     # ETF Options
     "510050_O.SSE": "510050",
     "510300_O.SSE": "510300",
@@ -53,7 +53,7 @@ CHAIN_UNDERLYING_MAP = {
 class InstrumentData:
     """"""
 
-    def __init__(self, contract: ContractData):
+    def __init__(self, contract: ContractData) -> None:
         """"""
         self.symbol: str = contract.symbol
         self.exchange: Exchange = contract.exchange
@@ -108,7 +108,7 @@ class InstrumentData:
 class OptionData(InstrumentData):
     """"""
 
-    def __init__(self, contract: ContractData):
+    def __init__(self, contract: ContractData) -> None:
         """"""
         super().__init__(contract)
 
@@ -164,18 +164,18 @@ class OptionData(InstrumentData):
         if not self.tick or not self.underlying:
             return
 
-        underlying_price = self.underlying.mid_price
+        underlying_price: float = self.underlying.mid_price
         if not underlying_price:
             return
         underlying_price += self.underlying_adjustment
 
         # Adjustment for inverse option contract
         if self.inverse:
-            ask_price = self.tick.ask_price_1 * underlying_price
-            bid_price = self.tick.bid_price_1 * underlying_price
+            ask_price: float = self.tick.ask_price_1 * underlying_price
+            bid_price: float = self.tick.bid_price_1 * underlying_price
         else:
-            ask_price = self.tick.ask_price_1
-            bid_price = self.tick.bid_price_1
+            ask_price: float = self.tick.ask_price_1
+            bid_price: float = self.tick.bid_price_1
 
         self.ask_impv = self.calculate_impv(
             ask_price,
@@ -202,7 +202,7 @@ class OptionData(InstrumentData):
         if not self.underlying:
             return
 
-        underlying_price = self.underlying.mid_price
+        underlying_price: float = self.underlying.mid_price
         if not underlying_price or not self.mid_impv:
             return
         underlying_price += self.underlying_adjustment
@@ -240,10 +240,10 @@ class OptionData(InstrumentData):
 
     def calculate_ref_price(self) -> float:
         """"""
-        underlying_price = self.underlying.mid_price
+        underlying_price: float = self.underlying.mid_price
         underlying_price += self.underlying_adjustment
 
-        ref_price = self.calculate_price(
+        ref_price: float = self.calculate_price(
             underlying_price,
             self.strike_price,
             self.interest_rate,
@@ -263,7 +263,7 @@ class OptionData(InstrumentData):
         super().update_tick(tick)
 
         if self.inverse:
-            current_dt = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            current_dt: datetime = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
             self.days_to_expiry = self.option_expiry - current_dt
             self.time_to_expiry = self.days_to_expiry / timedelta(365)
 
@@ -308,7 +308,7 @@ class OptionData(InstrumentData):
 class UnderlyingData(InstrumentData):
     """"""
 
-    def __init__(self, contract: ContractData):
+    def __init__(self, contract: ContractData) -> None:
         """"""
         super().__init__(contract)
 
@@ -344,7 +344,7 @@ class UnderlyingData(InstrumentData):
 class ChainData:
     """"""
 
-    def __init__(self, chain_symbol: str, event_engine: EventEngine):
+    def __init__(self, chain_symbol: str, event_engine: EventEngine) -> None:
         """"""
         self.chain_symbol: str = chain_symbol
         self.event_engine: EventEngine = event_engine
@@ -426,7 +426,7 @@ class ChainData:
 
     def update_tick(self, tick: TickData) -> None:
         """"""
-        option = self.options[tick.vt_symbol]
+        option: OptionData = self.options[tick.vt_symbol]
         option.update_tick(tick)
 
         if self.use_synthetic:
@@ -448,7 +448,7 @@ class ChainData:
 
     def update_trade(self, trade: TradeData) -> None:
         """"""
-        option = self.options[trade.vt_symbol]
+        option: OptionData = self.options[trade.vt_symbol]
 
         # Deduct old option pos greeks
         self.long_pos -= option.long_pos
@@ -510,10 +510,10 @@ class ChainData:
         """"""
         min_diff = 0
         atm_price = 0
-        atm_index = ""
+        atm_index: str = ""
 
         for index, call in self.calls.items():
-            put = self.puts[index]
+            put: OptionData = self.puts[index]
 
             call_tick: TickData = call.tick
             if not call_tick or not call_tick.bid_price_1 or not call_tick.ask_price_1:
@@ -523,15 +523,15 @@ class ChainData:
             if not put_tick or not put_tick.bid_price_1 or not put_tick.ask_price_1:
                 continue
 
-            call_mid_price = (call_tick.ask_price_1 + call_tick.bid_price_1) / 2
-            put_mid_price = (put_tick.ask_price_1 + put_tick.bid_price_1) / 2
+            call_mid_price: float = (call_tick.ask_price_1 + call_tick.bid_price_1) / 2
+            put_mid_price: float = (put_tick.ask_price_1 + put_tick.bid_price_1) / 2
 
-            diff = abs(call_mid_price - put_mid_price)
+            diff: float = abs(call_mid_price - put_mid_price)
 
             if not min_diff or diff < min_diff:
-                min_diff = diff
-                atm_price = call.strike_price
-                atm_index = call.chain_index
+                min_diff: float = diff
+                atm_price: float = call.strike_price
+                atm_index: str = call.chain_index
 
         self.atm_price = atm_price
         self.atm_index = atm_index
@@ -541,24 +541,24 @@ class ChainData:
         if not self.atm_price:
             return
 
-        atm_call = self.calls[self.atm_index]
-        atm_put = self.puts[self.atm_index]
+        atm_call: OptionData = self.calls[self.atm_index]
+        atm_put: OptionData = self.puts[self.atm_index]
 
         # Adjustment for inverse option contract
         if self.inverse:
-            call_price = atm_call.mid_price * self.underlying.mid_price
-            put_price = atm_put.mid_price * self.underlying.mid_price
+            call_price: float = atm_call.mid_price * self.underlying.mid_price
+            put_price: float = atm_put.mid_price * self.underlying.mid_price
         else:
-            call_price = atm_call.mid_price
-            put_price = atm_put.mid_price
+            call_price: float = atm_call.mid_price
+            put_price: float = atm_put.mid_price
 
-        synthetic_price = call_price - put_price + self.atm_price
+        synthetic_price: float = call_price - put_price + self.atm_price
         self.underlying_adjustment = synthetic_price - self.underlying.mid_price
 
     def update_synthetic_price(self) -> None:
         """"""
-        call = self.calls[self.atm_index]
-        put = self.puts[self.atm_index]
+        call: OptionData = self.calls[self.atm_index]
+        put: OptionData = self.puts[self.atm_index]
 
         self.underlying.mid_price = call.mid_price - put.mid_price + self.atm_price
         self.update_underlying_tick()
@@ -566,20 +566,20 @@ class ChainData:
         # 推送合成期货的行情
         symbol, exchange = extract_vt_symbol(self.underlying.vt_symbol)
 
-        tick = TickData(
+        tick: TickData = TickData(
             symbol=symbol,
             exchange=exchange,
             datetime=datetime.now(),
             last_price=self.underlying.mid_price,
             gateway_name=APP_NAME
         )
-        event = Event(EVENT_TICK + tick.vt_symbol, tick)
+        event: Event = Event(EVENT_TICK + tick.vt_symbol, tick)
         self.event_engine.put(event)
 
 
 class PortfolioData:
 
-    def __init__(self, name: str, event_engine: EventEngine):
+    def __init__(self, name: str, event_engine: EventEngine) -> None:
         """"""
         self.name: str = name
         self.event_engine: EventEngine = event_engine
@@ -634,24 +634,24 @@ class PortfolioData:
     def update_tick(self, tick: TickData) -> None:
         """"""
         if tick.vt_symbol in self.options:
-            option = self.options[tick.vt_symbol]
-            chain = option.chain
+            option: OptionData = self.options[tick.vt_symbol]
+            chain: ChainData = option.chain
             chain.update_tick(tick)
             self.calculate_pos_greeks()
         elif tick.vt_symbol in self.underlyings:
-            underlying = self.underlyings[tick.vt_symbol]
+            underlying: UnderlyingData = self.underlyings[tick.vt_symbol]
             underlying.update_tick(tick)
             self.calculate_pos_greeks()
 
     def update_trade(self, trade: TradeData) -> None:
         """"""
         if trade.vt_symbol in self.options:
-            option = self.options[trade.vt_symbol]
-            chain = option.chain
+            option: OptionData = self.options[trade.vt_symbol]
+            chain: ChainData = option.chain
             chain.update_trade(trade)
             self.calculate_pos_greeks()
         elif trade.vt_symbol in self.underlyings:
-            underlying = self.underlyings[trade.vt_symbol]
+            underlying: UnderlyingData = self.underlyings[trade.vt_symbol]
             underlying.update_trade(trade)
             self.calculate_pos_greeks()
 
@@ -676,13 +676,13 @@ class PortfolioData:
 
     def set_chain_underlying(self, chain_symbol: str, contract: ContractData) -> None:
         """"""
-        underlying = self.underlyings.get(contract.vt_symbol, None)
+        underlying: UnderlyingData = self.underlyings.get(contract.vt_symbol, None)
         if not underlying:
-            underlying = UnderlyingData(contract)
+            underlying: UnderlyingData = UnderlyingData(contract)
             underlying.set_portfolio(self)
             self.underlyings[contract.vt_symbol] = underlying
 
-        chain = self.get_chain(chain_symbol)
+        chain: ChainData = self.get_chain(chain_symbol)
         chain.set_underlying(underlying)
 
         # Add to active dict
@@ -693,10 +693,10 @@ class PortfolioData:
 
     def get_chain(self, chain_symbol: str) -> ChainData:
         """"""
-        chain = self._chains.get(chain_symbol, None)
+        chain: ChainData = self._chains.get(chain_symbol, None)
 
         if not chain:
-            chain = ChainData(chain_symbol, self.event_engine)
+            chain: ChainData = ChainData(chain_symbol, self.event_engine)
             chain.set_portfolio(self)
             self._chains[chain_symbol] = chain
 
@@ -704,14 +704,14 @@ class PortfolioData:
 
     def add_option(self, contract: ContractData) -> None:
         """"""
-        option = OptionData(contract)
+        option: OptionData = OptionData(contract)
         option.set_portfolio(self)
         self._options[contract.vt_symbol] = option
 
-        exchange_name = contract.exchange.value
+        exchange_name: str = contract.exchange.value
         chain_symbol: str = f"{contract.option_underlying}.{exchange_name}"
 
-        chain = self.get_chain(chain_symbol)
+        chain: ChainData = self.get_chain(chain_symbol)
         chain.add_option(option)
 
     def calculate_atm_price(self) -> None:

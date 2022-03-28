@@ -4,28 +4,34 @@ from functools import partial
 
 from scipy import interpolate
 
-from vnpy.event import Event
+from vnpy.event import Event, EventEngine
+from vnpy.trader.engine import MainEngine
 from vnpy.trader.ui import QtWidgets, QtCore, QtGui
 from vnpy.trader.event import EVENT_TICK, EVENT_TIMER, EVENT_TRADE
-from vnpy.trader.object import TickData, TradeData
+from vnpy.trader.object import TickData, TradeData, LogData
 from vnpy.trader.utility import save_json, load_json
 
-from ..engine import OptionEngine
+from ..engine import OptionEngine, OptionAlgoEngine
 from ..base import (
     EVENT_OPTION_ALGO_PRICING,
     EVENT_OPTION_ALGO_STATUS,
-    EVENT_OPTION_ALGO_LOG
+    EVENT_OPTION_ALGO_LOG,
+    PortfolioData,
+    ChainData,
+    OptionData,
+    InstrumentData
 )
 from .monitor import (
     MonitorCell, IndexCell, BidCell, AskCell, PosCell,
     COLOR_WHITE, COLOR_BLACK
 )
+from ..algo import ElectronicEyeAlgo
 
 
 class AlgoSpinBox(QtWidgets.QSpinBox):
     """"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """"""
         super().__init__()
 
@@ -49,7 +55,7 @@ class AlgoSpinBox(QtWidgets.QSpinBox):
 class AlgoPositiveSpinBox(AlgoSpinBox):
     """"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """"""
         super().__init__()
 
@@ -59,7 +65,7 @@ class AlgoPositiveSpinBox(AlgoSpinBox):
 class AlgoDoubleSpinBox(QtWidgets.QDoubleSpinBox):
     """"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """"""
         super().__init__()
 
@@ -84,7 +90,7 @@ class AlgoDoubleSpinBox(QtWidgets.QDoubleSpinBox):
 class AlgoDirectionCombo(QtWidgets.QComboBox):
     """"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """"""
         super().__init__()
 
@@ -97,17 +103,17 @@ class AlgoDirectionCombo(QtWidgets.QComboBox):
     def get_value(self) -> Dict[str, bool]:
         """"""
         if self.currentText() == "双向":
-            value = {
+            value: dict = {
                 "long_allowed": True,
                 "short_allowed": True
             }
         elif self.currentText() == "做多":
-            value = {
+            value: dict = {
                 "long_allowed": True,
                 "short_allowed": False
             }
         else:
-            value = {
+            value: dict = {
                 "long_allowed": False,
                 "short_allowed": True
             }
@@ -131,14 +137,14 @@ class AlgoDirectionCombo(QtWidgets.QComboBox):
 class AlgoPricingButton(QtWidgets.QPushButton):
     """"""
 
-    def __init__(self, vt_symbol: str, manager: "ElectronicEyeManager"):
+    def __init__(self, vt_symbol: str, manager: "ElectronicEyeManager") -> None:
         """"""
         super().__init__()
 
-        self.vt_symbol = vt_symbol
-        self.manager = manager
+        self.vt_symbol: str = vt_symbol
+        self.manager: ElectronicEyeManager = manager
 
-        self.active = False
+        self.active: bool = False
         self.setText("N")
         self.clicked.connect(self.on_clicked)
 
@@ -162,14 +168,14 @@ class AlgoPricingButton(QtWidgets.QPushButton):
 class AlgoTradingButton(QtWidgets.QPushButton):
     """"""
 
-    def __init__(self, vt_symbol: str, manager: "ElectronicEyeManager"):
+    def __init__(self, vt_symbol: str, manager: "ElectronicEyeManager") -> None:
         """"""
         super().__init__()
 
-        self.vt_symbol = vt_symbol
-        self.manager = manager
+        self.vt_symbol: str = vt_symbol
+        self.manager: ElectronicEyeManager = manager
 
-        self.active = False
+        self.active: bool = False
         self.setText("N")
         self.clicked.connect(self.on_clicked)
 
@@ -220,16 +226,16 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         {"name": "trading_active", "display": "交易", "cell": AlgoTradingButton},
     ]
 
-    def __init__(self, option_engine: OptionEngine, portfolio_name: str):
+    def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """"""
         super().__init__()
 
-        self.option_engine = option_engine
-        self.event_engine = option_engine.event_engine
-        self.main_engine = option_engine.main_engine
-        self.algo_engine = option_engine.algo_engine
-        self.portfolio_name = portfolio_name
-        self.setting_filename = f"{portfolio_name}_electronic_eye.json"
+        self.option_engine: OptionEngine = option_engine
+        self.event_engine: EventEngine = option_engine.event_engine
+        self.main_engine: MainEngine = option_engine.main_engine
+        self.algo_engine: OptionAlgoEngine = option_engine.algo_engine
+        self.portfolio_name: str = portfolio_name
+        self.setting_filename: str = f"{portfolio_name}_electronic_eye.json"
 
         self.cells: Dict[str, Dict] = {}
 
@@ -244,31 +250,31 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         self.setEditTriggers(self.NoEditTriggers)
 
         # Set table row and column numbers
-        portfolio = self.option_engine.get_portfolio(self.portfolio_name)
+        portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
 
-        row_count = 0
+        row_count: int = 0
         for chain in portfolio.chains.values():
             row_count += (1 + len(chain.indexes))
         self.setRowCount(row_count)
 
-        column_count = len(self.headers) * 2 + 1
+        column_count: int = len(self.headers) * 2 + 1
         self.setColumnCount(column_count)
 
-        call_labels = [d["display"] for d in self.headers]
-        put_labels = copy(call_labels)
+        call_labels: list = [d["display"] for d in self.headers]
+        put_labels: list = copy(call_labels)
         put_labels.reverse()
-        labels = call_labels + ["行权价"] + put_labels
+        labels: list = call_labels + ["行权价"] + put_labels
         self.setHorizontalHeaderLabels(labels)
 
         # Init cells
-        strike_column = len(self.headers)
-        current_row = 0
+        strike_column: int = len(self.headers)
+        current_row: int = 0
 
-        chain_symbols = list(portfolio.chains.keys())
+        chain_symbols: list = list(portfolio.chains.keys())
         chain_symbols.sort()
 
         for chain_symbol in chain_symbols:
-            chain = portfolio.get_chain(chain_symbol)
+            chain: ChainData = portfolio.get_chain(chain_symbol)
 
             self.setItem(
                 current_row,
@@ -277,13 +283,13 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
             )
 
             for index in chain.indexes:
-                call = chain.calls[index]
-                put = chain.puts[index]
+                call: OptionData = chain.calls[index]
+                put: OptionData = chain.puts[index]
 
                 current_row += 1
 
                 # Call cells
-                call_cells = {}
+                call_cells: dict = {}
 
                 for column, d in enumerate(self.headers):
                     cell_type = d["cell"]
@@ -303,8 +309,8 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
                 self.cells[call.vt_symbol] = call_cells
 
                 # Put cells
-                put_cells = {}
-                put_headers = copy(self.headers)
+                put_cells: dict = {}
+                put_headers: list = copy(self.headers)
                 put_headers.reverse()
 
                 for column, d in enumerate(put_headers):
@@ -327,7 +333,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
                 self.cells[put.vt_symbol] = put_cells
 
                 # Strike cell
-                index_cell = IndexCell(str(call.chain_index))
+                index_cell: IndexCell = IndexCell(str(call.chain_index))
                 self.setItem(current_row, strike_column, index_cell)
 
             # Move to next row
@@ -339,13 +345,13 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         for vt_symbol in self.cells.keys():
             self.update_net_pos(vt_symbol)
 
-            tick = self.main_engine.get_tick(vt_symbol)
+            tick: TickData = self.main_engine.get_tick(vt_symbol)
             if tick:
                 self.update_tick(tick)
 
     def load_setting(self) -> None:
         """"""
-        fields = [
+        fields: list = [
             "price_spread",
             "volatility_spread",
             "max_pos",
@@ -354,7 +360,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
             "direction"
         ]
 
-        setting = load_json(self.setting_filename)
+        setting: dict = load_json(self.setting_filename)
 
         for vt_symbol, cells in self.cells.items():
             buf = setting.get(vt_symbol, None)
@@ -364,7 +370,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
 
     def save_setting(self) -> None:
         """"""
-        fields = [
+        fields: list = [
             "price_spread",
             "volatility_spread",
             "max_pos",
@@ -373,9 +379,9 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
             "direction"
         ]
 
-        setting = {}
+        setting: dict = {}
         for vt_symbol, cells in self.cells.items():
-            buf = {}
+            buf: dict = {}
             for field in fields:
                 buf[field] = cells[field].get_value()
             setting[vt_symbol] = buf
@@ -413,7 +419,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
 
     def update_tick(self, tick: TickData) -> None:
         """"""
-        cells = self.cells.get(tick.vt_symbol, None)
+        cells: dict = self.cells.get(tick.vt_symbol, None)
         if not cells:
             return
 
@@ -424,8 +430,8 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
 
     def process_status_event(self, event: Event) -> None:
         """"""
-        algo = event.data
-        cells = self.cells[algo.vt_symbol]
+        algo: ElectronicEyeAlgo = event.data
+        cells: dict = self.cells[algo.vt_symbol]
 
         cells["price_spread"].update_status(algo.pricing_active)
         cells["volatility_spread"].update_status(algo.pricing_active)
@@ -439,8 +445,8 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
 
     def process_pricing_event(self, event: Event) -> None:
         """"""
-        algo = event.data
-        cells = self.cells[algo.vt_symbol]
+        algo: ElectronicEyeAlgo = event.data
+        cells: dict = self.cells[algo.vt_symbol]
 
         if algo.ref_price:
             cells["algo_bid_price"].setText(str(algo.algo_bid_price))
@@ -462,18 +468,18 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
 
     def update_net_pos(self, vt_symbol: str) -> None:
         """"""
-        cells = self.cells.get(vt_symbol, None)
+        cells: dict = self.cells.get(vt_symbol, None)
         if not cells:
             return
 
-        option = self.option_engine.get_instrument(vt_symbol)
+        option: InstrumentData = self.option_engine.get_instrument(vt_symbol)
         cells["net_pos"].setText(str(option.net_pos))
 
     def start_algo_pricing(self, vt_symbol: str) -> None:
         """"""
-        cells = self.cells[vt_symbol]
+        cells: dict = self.cells[vt_symbol]
 
-        params = {}
+        params: dict = {}
         params["price_spread"] = cells["price_spread"].get_value()
         params["volatility_spread"] = cells["volatility_spread"].get_value()
 
@@ -485,7 +491,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
 
     def start_algo_trading(self, vt_symbol: str) -> None:
         """"""
-        cells = self.cells[vt_symbol]
+        cells: dict = self.cells[vt_symbol]
 
         params = cells["direction"].get_value()
         for name in [
@@ -507,14 +513,14 @@ class ElectronicEyeManager(QtWidgets.QWidget):
 
     signal_log = QtCore.pyqtSignal(Event)
 
-    def __init__(self, option_engine: OptionEngine, portfolio_name: str):
+    def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """"""
         super().__init__()
 
-        self.option_engine = option_engine
-        self.event_Engine = option_engine.event_engine
-        self.algo_engine = option_engine.algo_engine
-        self.portfolio_name = portfolio_name
+        self.option_engine: OptionEngine = option_engine
+        self.event_Engine: EventEngine = option_engine.event_engine
+        self.algo_engine: OptionAlgoEngine = option_engine.algo_engine
+        self.portfolio_name: str = portfolio_name
 
         self.init_ui()
         self.register_event()
@@ -523,45 +529,45 @@ class ElectronicEyeManager(QtWidgets.QWidget):
         """"""
         self.setWindowTitle("期权电子眼")
 
-        self.algo_monitor = ElectronicEyeMonitor(self.option_engine, self.portfolio_name)
+        self.algo_monitor: ElectronicEyeMonitor = ElectronicEyeMonitor(self.option_engine, self.portfolio_name)
 
-        self.log_monitor = QtWidgets.QTextEdit()
+        self.log_monitor: QtWidgets.QTextEdit = QtWidgets.QTextEdit()
         self.log_monitor.setReadOnly(True)
         self.log_monitor.setMaximumWidth(400)
 
-        stop_pricing_button = QtWidgets.QPushButton("停止定价")
+        stop_pricing_button: QtWidgets.QPushButton = QtWidgets.QPushButton("停止定价")
         stop_pricing_button.clicked.connect(self.stop_pricing_for_all)
 
-        stop_trading_button = QtWidgets.QPushButton("停止交易")
+        stop_trading_button: QtWidgets.QPushButton = QtWidgets.QPushButton("停止交易")
         stop_trading_button.clicked.connect(self.stop_trading_for_all)
 
-        self.price_spread_spin = AlgoDoubleSpinBox()
-        self.volatility_spread_spin = AlgoDoubleSpinBox()
-        self.direction_combo = AlgoDirectionCombo()
-        self.max_order_size_spin = AlgoPositiveSpinBox()
-        self.target_pos_spin = AlgoSpinBox()
-        self.max_pos_spin = AlgoPositiveSpinBox()
+        self.price_spread_spin: AlgoDoubleSpinBox = AlgoDoubleSpinBox()
+        self.volatility_spread_spin: AlgoDoubleSpinBox = AlgoDoubleSpinBox()
+        self.direction_combo: AlgoDirectionCombo = AlgoDirectionCombo()
+        self.max_order_size_spin: AlgoPositiveSpinBox = AlgoPositiveSpinBox()
+        self.target_pos_spin: AlgoSpinBox = AlgoSpinBox()
+        self.max_pos_spin: AlgoPositiveSpinBox = AlgoPositiveSpinBox()
 
-        price_spread_button = QtWidgets.QPushButton("设置")
+        price_spread_button: QtWidgets.QPushButton = QtWidgets.QPushButton("设置")
         price_spread_button.clicked.connect(self.set_price_spread_for_all)
 
-        volatility_spread_button = QtWidgets.QPushButton("设置")
+        volatility_spread_button: QtWidgets.QPushButton = QtWidgets.QPushButton("设置")
         volatility_spread_button.clicked.connect(self.set_volatility_spread_for_all)
 
-        direction_button = QtWidgets.QPushButton("设置")
+        direction_button: QtWidgets.QPushButton = QtWidgets.QPushButton("设置")
         direction_button.clicked.connect(self.set_direction_for_all)
 
-        max_order_size_button = QtWidgets.QPushButton("设置")
+        max_order_size_button: QtWidgets.QPushButton = QtWidgets.QPushButton("设置")
         max_order_size_button.clicked.connect(self.set_max_order_size_for_all)
 
-        target_pos_button = QtWidgets.QPushButton("设置")
+        target_pos_button: QtWidgets.QPushButton = QtWidgets.QPushButton("设置")
         target_pos_button.clicked.connect(self.set_target_pos_for_all)
 
-        max_pos_button = QtWidgets.QPushButton("设置")
+        max_pos_button: QtWidgets.QPushButton = QtWidgets.QPushButton("设置")
         max_pos_button.clicked.connect(self.set_max_pos_for_all)
 
-        QLabel = QtWidgets.QLabel
-        grid = QtWidgets.QGridLayout()
+        QLabel: QtWidgets.QLabel = QtWidgets.QLabel
+        grid: QtWidgets.QGridLayout = QtWidgets.QGridLayout()
         grid.addWidget(QLabel("价格价差"), 0, 0)
         grid.addWidget(self.price_spread_spin, 0, 1)
         grid.addWidget(price_spread_button, 0, 2)
@@ -581,16 +587,16 @@ class ElectronicEyeManager(QtWidgets.QWidget):
         grid.addWidget(self.direction_combo, 5, 1)
         grid.addWidget(direction_button, 5, 2)
 
-        hbox1 = QtWidgets.QHBoxLayout()
+        hbox1: QtWidgets.QHBoxLayout = QtWidgets.QHBoxLayout()
         hbox1.addWidget(stop_pricing_button)
         hbox1.addWidget(stop_trading_button)
 
-        vbox = QtWidgets.QVBoxLayout()
+        vbox: QtWidgets.QVBoxLayout = QtWidgets.QVBoxLayout()
         vbox.addLayout(hbox1)
         vbox.addLayout(grid)
         vbox.addWidget(self.log_monitor)
 
-        hbox = QtWidgets.QHBoxLayout()
+        hbox: QtWidgets.QHBoxLayout = QtWidgets.QHBoxLayout()
         hbox.addWidget(self.algo_monitor)
         hbox.addLayout(vbox)
 
@@ -604,9 +610,9 @@ class ElectronicEyeManager(QtWidgets.QWidget):
 
     def process_log_event(self, event: Event) -> None:
         """"""
-        log = event.data
-        timestr = log.time.strftime("%H:%M:%S")
-        msg = f"{timestr}  {log.msg}"
+        log: LogData = event.data
+        timestr: str = log.time.strftime("%H:%M:%S")
+        msg: str = f"{timestr}  {log.msg}"
         self.log_monitor.append(msg)
 
     def show(self) -> None:
@@ -617,7 +623,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
 
     def set_price_spread_for_all(self) -> None:
         """"""
-        price_spread = self.price_spread_spin.get_value()
+        price_spread: float = self.price_spread_spin.get_value()
 
         for cells in self.algo_monitor.cells.values():
             if cells["price_spread"].isEnabled():
@@ -625,7 +631,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
 
     def set_volatility_spread_for_all(self) -> None:
         """"""
-        volatility_spread = self.volatility_spread_spin.get_value()
+        volatility_spread: float = self.volatility_spread_spin.get_value()
 
         for cells in self.algo_monitor.cells.values():
             if cells["volatility_spread"].isEnabled():
@@ -633,7 +639,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
 
     def set_direction_for_all(self) -> None:
         """"""
-        ix = self.direction_combo.currentIndex()
+        ix: int = self.direction_combo.currentIndex()
 
         for cells in self.algo_monitor.cells.values():
             if cells["direction"].isEnabled():
@@ -641,7 +647,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
 
     def set_max_order_size_for_all(self) -> None:
         """"""
-        size = self.max_order_size_spin.get_value()
+        size: int = self.max_order_size_spin.get_value()
 
         for cells in self.algo_monitor.cells.values():
             if cells["max_order_size"].isEnabled():
@@ -649,7 +655,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
 
     def set_target_pos_for_all(self) -> None:
         """"""
-        pos = self.target_pos_spin.get_value()
+        pos: int = self.target_pos_spin.get_value()
 
         for cells in self.algo_monitor.cells.values():
             if cells["target_pos"].isEnabled():
@@ -657,7 +663,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
 
     def set_max_pos_for_all(self) -> None:
         """"""
-        pos = self.max_pos_spin.get_value()
+        pos: int = self.max_pos_spin.get_value()
 
         for cells in self.algo_monitor.cells.values():
             if cells["max_pos"].isEnabled():
@@ -682,7 +688,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
 class VolatilityDoubleSpinBox(QtWidgets.QDoubleSpinBox):
     """"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """"""
         super().__init__()
 
@@ -701,13 +707,13 @@ class PricingVolatilityManager(QtWidgets.QWidget):
 
     signal_timer = QtCore.pyqtSignal(Event)
 
-    def __init__(self, option_engine: OptionEngine, portfolio_name: str):
+    def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """"""
         super().__init__()
 
-        self.option_engine = option_engine
-        self.event_engine = option_engine.event_engine
-        self.portfolio = option_engine.get_portfolio(portfolio_name)
+        self.option_engine: OptionEngine = option_engine
+        self.event_engine: EventEngine = option_engine.event_engine
+        self.portfolio: PortfolioData = option_engine.get_portfolio(portfolio_name)
 
         self.cells: Dict[Tuple, Dict] = {}
         self.chain_symbols: List[str] = []
@@ -720,18 +726,18 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         """"""
         self.setWindowTitle("波动率管理")
 
-        tab = QtWidgets.QTabWidget()
-        vbox = QtWidgets.QVBoxLayout()
+        tab: QtWidgets.QTabWidget = QtWidgets.QTabWidget()
+        vbox: QtWidgets.QVBoxLayout = QtWidgets.QVBoxLayout()
         vbox.addWidget(tab)
         self.setLayout(vbox)
 
-        self.chain_symbols = list(self.portfolio.chains.keys())
+        self.chain_symbols: list = list(self.portfolio.chains.keys())
         self.chain_symbols.sort()
 
         for chain_symbol in self.chain_symbols:
-            chain = self.portfolio.get_chain(chain_symbol)
+            chain: ChainData = self.portfolio.get_chain(chain_symbol)
 
-            table = QtWidgets.QTableWidget()
+            table: QtWidgets.QTableWidget = QtWidgets.QTableWidget()
             table.setEditTriggers(table.NoEditTriggers)
             table.verticalHeader().setVisible(False)
             table.setRowCount(len(chain.indexes))
@@ -739,7 +745,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
                 QtWidgets.QHeaderView.Stretch
             )
 
-            labels = [
+            labels: list = [
                 "行权价",
                 "OTM隐波",
                 "CALL隐波",
@@ -751,27 +757,27 @@ class PricingVolatilityManager(QtWidgets.QWidget):
             table.setHorizontalHeaderLabels(labels)
 
             for row, index in enumerate(chain.indexes):
-                index_cell = IndexCell(index)
-                otm_impv_cell = MonitorCell("")
-                call_impv_cell = MonitorCell("")
-                put_impv_cell = MonitorCell("")
+                index_cell: IndexCell = IndexCell(index)
+                otm_impv_cell: MonitorCell = MonitorCell("")
+                call_impv_cell: MonitorCell = MonitorCell("")
+                put_impv_cell: MonitorCell = MonitorCell("")
 
                 set_func = partial(
                     self.set_pricing_impv,
                     chain_symbol=chain_symbol,
                     index=index
                 )
-                pricing_impv_spin = VolatilityDoubleSpinBox()
+                pricing_impv_spin: VolatilityDoubleSpinBox = VolatilityDoubleSpinBox()
                 pricing_impv_spin.setAlignment(QtCore.Qt.AlignCenter)
                 pricing_impv_spin.valueChanged.connect(set_func)
 
-                check = QtWidgets.QCheckBox()
+                check: QtWidgets.QCheckBox = QtWidgets.QCheckBox()
 
-                check_hbox = QtWidgets.QHBoxLayout()
+                check_hbox: QtWidgets.QHBoxLayout = QtWidgets.QHBoxLayout()
                 check_hbox.setAlignment(QtCore.Qt.AlignCenter)
                 check_hbox.addWidget(check)
 
-                check_widget = QtWidgets.QWidget()
+                check_widget: QtWidgets.QWidget = QtWidgets.QWidget()
                 check_widget.setLayout(check_hbox)
 
                 table.setItem(row, 0, index_cell)
@@ -781,7 +787,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
                 table.setCellWidget(row, 4, pricing_impv_spin)
                 table.setCellWidget(row, 5, check_widget)
 
-                cells = {
+                cells: dict = {
                     "otm_impv": otm_impv_cell,
                     "call_impv": call_impv_cell,
                     "put_impv": put_impv_cell,
@@ -792,32 +798,32 @@ class PricingVolatilityManager(QtWidgets.QWidget):
                 self.cells[(chain_symbol, index)] = cells
 
             reset_func = partial(self.reset_pricing_impv, chain_symbol=chain_symbol)
-            button_reset = QtWidgets.QPushButton("重置")
+            button_reset: QtWidgets.QPushButton = QtWidgets.QPushButton("重置")
             button_reset.clicked.connect(reset_func)
 
             fit_func = partial(self.fit_pricing_impv, chain_symbol=chain_symbol)
-            button_fit = QtWidgets.QPushButton("拟合")
+            button_fit: QtWidgets.QPushButton = QtWidgets.QPushButton("拟合")
             button_fit.clicked.connect(fit_func)
 
             increase_func = partial(self.increase_pricing_impv, chain_symbol=chain_symbol)
-            button_increase = QtWidgets.QPushButton("+0.1%")
+            button_increase: QtWidgets.QPushButton = QtWidgets.QPushButton("+0.1%")
             button_increase.clicked.connect(increase_func)
 
             decrease_func = partial(self.decrease_pricing_impv, chain_symbol=chain_symbol)
-            button_decrease = QtWidgets.QPushButton("-0.1%")
+            button_decrease: QtWidgets.QPushButton = QtWidgets.QPushButton("-0.1%")
             button_decrease.clicked.connect(decrease_func)
 
-            hbox = QtWidgets.QHBoxLayout()
+            hbox: QtWidgets.QHBoxLayout = QtWidgets.QHBoxLayout()
             hbox.addWidget(button_reset)
             hbox.addWidget(button_fit)
             hbox.addWidget(button_increase)
             hbox.addWidget(button_decrease)
 
-            vbox = QtWidgets.QVBoxLayout()
+            vbox: QtWidgets.QVBoxLayout = QtWidgets.QVBoxLayout()
             vbox.addLayout(hbox)
             vbox.addWidget(table)
 
-            chain_widget = QtWidgets.QWidget()
+            chain_widget: QtWidgets.QWidget = QtWidgets.QWidget()
             chain_widget.setLayout(vbox)
             tab.addTab(chain_widget, chain_symbol)
 
@@ -843,17 +849,17 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         """
         Set pricing impv to the otm mid impv of each strike price.
         """
-        chain = self.portfolio.get_chain(chain_symbol)
-        atm_index = chain.atm_index
+        chain: ChainData = self.portfolio.get_chain(chain_symbol)
+        atm_index: str = chain.atm_index
 
         for index in chain.indexes:
-            call = chain.calls[index]
-            put = chain.puts[index]
+            call: OptionData = chain.calls[index]
+            put: OptionData = chain.puts[index]
 
             if index >= atm_index:
-                otm = call
+                otm: OptionData = call
             else:
-                otm = put
+                otm: OptionData = put
 
             call.pricing_impv = otm.mid_impv
             put.pricing_impv = otm.mid_impv
@@ -864,33 +870,33 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         """
         Fit pricing impv with cubic spline algo.
         """
-        chain = self.portfolio.get_chain(chain_symbol)
-        atm_index = chain.atm_index
+        chain: ChainData = self.portfolio.get_chain(chain_symbol)
+        atm_index: str = chain.atm_index
 
-        strike_prices = []
-        pricing_impvs = []
+        strike_prices: list = []
+        pricing_impvs: list = []
 
         for index in chain.indexes:
-            call = chain.calls[index]
-            put = chain.puts[index]
-            cells = self.cells[(chain_symbol, index)]
+            call: OptionData = chain.calls[index]
+            put: OptionData = chain.puts[index]
+            cells: dict = self.cells[(chain_symbol, index)]
 
             if not cells["check"].isChecked():
                 if index >= atm_index:
-                    otm = call
+                    otm: OptionData = call
                 else:
-                    otm = put
+                    otm: OptionData = put
 
                 strike_prices.append(otm.strike_price)
                 pricing_impvs.append(otm.pricing_impv)
 
-        cs = interpolate.CubicSpline(strike_prices, pricing_impvs)
+        cs: interpolate.CubicSpline = interpolate.CubicSpline(strike_prices, pricing_impvs)
 
         for index in chain.indexes:
-            call = chain.calls[index]
-            put = chain.puts[index]
+            call: OptionData = chain.calls[index]
+            put: OptionData = chain.puts[index]
 
-            new_impv = float(cs(call.strike_price))
+            new_impv: float = float(cs(call.strike_price))
             call.pricing_impv = new_impv
             put.pricing_impv = new_impv
 
@@ -900,7 +906,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         """
         Increase pricing impv of all options within a chain by 0.1%.
         """
-        chain = self.portfolio.get_chain(chain_symbol)
+        chain: ChainData = self.portfolio.get_chain(chain_symbol)
 
         for option in chain.options.values():
             option.pricing_impv += 0.001
@@ -911,7 +917,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         """
         Decrease pricing impv of all options within a chain by 0.1%.
         """
-        chain = self.portfolio.get_chain(chain_symbol)
+        chain: ChainData = self.portfolio.get_chain(chain_symbol)
 
         for option in chain.options.values():
             option.pricing_impv -= 0.001
@@ -920,66 +926,66 @@ class PricingVolatilityManager(QtWidgets.QWidget):
 
     def set_pricing_impv(self, value: float, chain_symbol: str, index: str) -> None:
         """"""
-        new_impv = value / 100
+        new_impv: float = value / 100
 
-        chain = self.portfolio.get_chain(chain_symbol)
+        chain: ChainData = self.portfolio.get_chain(chain_symbol)
 
-        call = chain.calls[index]
+        call: OptionData = chain.calls[index]
         call.pricing_impv = new_impv
 
-        put = chain.puts[index]
+        put: OptionData = chain.puts[index]
         put.pricing_impv = new_impv
 
     def update_pricing_impv(self, chain_symbol: str) -> None:
         """"""
-        chain = self.portfolio.get_chain(chain_symbol)
-        atm_index = chain.atm_index
+        chain: ChainData = self.portfolio.get_chain(chain_symbol)
+        atm_index: str = chain.atm_index
 
         for index in chain.indexes:
             if index >= atm_index:
-                otm = chain.calls[index]
+                otm: OptionData = chain.calls[index]
             else:
-                otm = chain.puts[index]
+                otm: OptionData = chain.puts[index]
 
-            value = round(otm.pricing_impv * 100, 1)
+            value: int = round(otm.pricing_impv * 100, 1)
 
-            key = (chain_symbol, index)
+            key: tuple = (chain_symbol, index)
             cells = self.cells.get(key, None)
             if cells:
                 cells["pricing_impv"].setValue(value)
 
     def update_chain_impv(self, chain_symbol: str) -> None:
         """"""
-        chain = self.portfolio.get_chain(chain_symbol)
-        atm_index = chain.atm_index
+        chain: ChainData = self.portfolio.get_chain(chain_symbol)
+        atm_index: str = chain.atm_index
 
         for index in chain.indexes:
-            call = chain.calls[index]
-            put = chain.puts[index]
+            call: OptionData = chain.calls[index]
+            put: OptionData = chain.puts[index]
             if index >= atm_index:
-                otm = call
+                otm: OptionData = call
             else:
-                otm = put
+                otm: OptionData = put
 
-            cells = self.cells[(chain_symbol, index)]
+            cells: dict = self.cells[(chain_symbol, index)]
             cells["otm_impv"].setText(f"{otm.mid_impv:.1%}")
             cells["call_impv"].setText(f"{call.mid_impv:.1%}")
             cells["put_impv"].setText(f"{put.mid_impv:.1%}")
 
-        current_atm_index = self.chain_atm_index.get(chain_symbol, "")
+        current_atm_index: str = self.chain_atm_index.get(chain_symbol, "")
         if current_atm_index == atm_index:
             return
         self.chain_atm_index[chain_symbol] = atm_index
 
         if current_atm_index:
-            old_cells = self.cells[(chain_symbol, current_atm_index)]
+            old_cells: dict = self.cells[(chain_symbol, current_atm_index)]
 
             for field in ["otm_impv", "call_impv", "put_impv"]:
                 old_cells[field].setForeground(COLOR_WHITE)
                 old_cells[field].setBackground(self.default_background)
 
         if atm_index:
-            new_cells = self.cells[(chain_symbol, atm_index)]
+            new_cells: dict = self.cells[(chain_symbol, atm_index)]
 
             for field in ["otm_impv", "call_impv", "put_impv"]:
                 new_cells[field].setForeground(COLOR_BLACK)

@@ -2,30 +2,32 @@ from typing import List, Dict, Set, Union
 from copy import copy
 from collections import defaultdict
 
-from vnpy.event import Event
+from vnpy.event import Event, EventEngine
 from vnpy.trader.ui import QtWidgets, QtCore, QtGui
 from vnpy.trader.ui.widget import COLOR_BID, COLOR_ASK, COLOR_BLACK
 from vnpy.trader.event import (
     EVENT_TICK, EVENT_TRADE, EVENT_POSITION, EVENT_TIMER
 )
+from vnpy.trader.object import TickData, TradeData, PositionData
 from vnpy.trader.utility import round_to
+
 from ..engine import OptionEngine
-from ..base import UnderlyingData, OptionData, ChainData, PortfolioData
+from ..base import UnderlyingData, OptionData, ChainData, PortfolioData, InstrumentData
 
 
-COLOR_WHITE = QtGui.QColor("white")
-COLOR_POS = QtGui.QColor("yellow")
-COLOR_GREEKS = QtGui.QColor("cyan")
+COLOR_WHITE: QtGui.QColor = QtGui.QColor("white")
+COLOR_POS: QtGui.QColor = QtGui.QColor("yellow")
+COLOR_GREEKS: QtGui.QColor = QtGui.QColor("cyan")
 
 
 class MonitorCell(QtWidgets.QTableWidgetItem):
     """"""
 
-    def __init__(self, text: str = "", vt_symbol: str = ""):
+    def __init__(self, text: str = "", vt_symbol: str = "") -> None:
         """"""
         super().__init__(text)
 
-        self.vt_symbol = vt_symbol
+        self.vt_symbol: str = vt_symbol
 
         self.setTextAlignment(QtCore.Qt.AlignCenter)
 
@@ -33,7 +35,7 @@ class MonitorCell(QtWidgets.QTableWidgetItem):
 class IndexCell(MonitorCell):
     """"""
 
-    def __init__(self, text: str = "", vt_symbol: str = ""):
+    def __init__(self, text: str = "", vt_symbol: str = "") -> None:
         """"""
         super().__init__(text, vt_symbol)
 
@@ -44,7 +46,7 @@ class IndexCell(MonitorCell):
 class BidCell(MonitorCell):
     """"""
 
-    def __init__(self, text: str = "", vt_symbol: str = ""):
+    def __init__(self, text: str = "", vt_symbol: str = "") -> None:
         """"""
         super().__init__(text, vt_symbol)
 
@@ -54,7 +56,7 @@ class BidCell(MonitorCell):
 class AskCell(MonitorCell):
     """"""
 
-    def __init__(self, text: str = "", vt_symbol: str = ""):
+    def __init__(self, text: str = "", vt_symbol: str = "") -> None:
         """"""
         super().__init__(text, vt_symbol)
 
@@ -64,7 +66,7 @@ class AskCell(MonitorCell):
 class PosCell(MonitorCell):
     """"""
 
-    def __init__(self, text: str = "", vt_symbol: str = ""):
+    def __init__(self, text: str = "", vt_symbol: str = "") -> None:
         """"""
         super().__init__(text, vt_symbol)
 
@@ -74,7 +76,7 @@ class PosCell(MonitorCell):
 class GreeksCell(MonitorCell):
     """"""
 
-    def __init__(self, text: str = "", vt_symbol: str = ""):
+    def __init__(self, text: str = "", vt_symbol: str = "") -> None:
         """"""
         super().__init__(text, vt_symbol)
 
@@ -84,7 +86,7 @@ class GreeksCell(MonitorCell):
 class MonitorTable(QtWidgets.QTableWidget):
     """"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """"""
         super().__init__()
 
@@ -94,7 +96,7 @@ class MonitorTable(QtWidgets.QTableWidget):
         """
         Create right click menu.
         """
-        self.menu = QtWidgets.QMenu(self)
+        self.menu: QtWidgets.QMenu = QtWidgets.QMenu(self)
 
         resize_action = QtWidgets.QAction("调整列宽", self)
         resize_action.triggered.connect(self.resizeColumnsToContents)
@@ -130,13 +132,13 @@ class OptionMarketMonitor(MonitorTable):
         {"name": "net_pos", "display": "净持仓", "cell": PosCell},
     ]
 
-    def __init__(self, option_engine: OptionEngine, portfolio_name: str):
+    def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """"""
         super().__init__()
 
-        self.option_engine = option_engine
-        self.event_engine = option_engine.event_engine
-        self.portfolio_name = portfolio_name
+        self.option_engine: OptionEngine = option_engine
+        self.event_engine: EventEngine = option_engine.event_engine
+        self.portfolio_name: str = portfolio_name
 
         self.cells: Dict[str, Dict] = {}
         self.option_symbols: Set[str] = set()
@@ -152,39 +154,39 @@ class OptionMarketMonitor(MonitorTable):
         self.setEditTriggers(self.NoEditTriggers)
 
         # Store option and underlying symbols
-        portfolio = self.option_engine.get_portfolio(self.portfolio_name)
+        portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
 
         for option in portfolio.options.values():
             self.option_symbols.add(option.vt_symbol)
             self.underlying_option_map[option.underlying.vt_symbol].append(option.vt_symbol)
 
         # Get greeks decimals precision
-        self.greeks_precision = f"{portfolio.precision}f"
+        self.greeks_precision: str = f"{portfolio.precision}f"
 
         # Set table row and column numbers
-        row_count = 0
+        row_count: int = 0
         for chain in portfolio.chains.values():
             row_count += (1 + len(chain.indexes))
         self.setRowCount(row_count)
 
-        column_count = len(self.headers) * 2 + 1
+        column_count: int = len(self.headers) * 2 + 1
         self.setColumnCount(column_count)
 
-        call_labels = [d["display"] for d in self.headers]
-        put_labels = copy(call_labels)
+        call_labels: list = [d["display"] for d in self.headers]
+        put_labels: list = copy(call_labels)
         put_labels.reverse()
-        labels = call_labels + ["行权价"] + put_labels
+        labels: list = call_labels + ["行权价"] + put_labels
         self.setHorizontalHeaderLabels(labels)
 
         # Init cells
-        strike_column = len(self.headers)
-        current_row = 0
+        strike_column: int = len(self.headers)
+        current_row: int = 0
 
-        chain_symbols = list(portfolio.chains.keys())
+        chain_symbols: list = list(portfolio.chains.keys())
         chain_symbols.sort()
 
         for chain_symbol in chain_symbols:
-            chain = portfolio.get_chain(chain_symbol)
+            chain: ChainData = portfolio.get_chain(chain_symbol)
 
             self.setItem(
                 current_row,
@@ -193,13 +195,13 @@ class OptionMarketMonitor(MonitorTable):
             )
 
             for index in chain.indexes:
-                call = chain.calls[index]
-                put = chain.puts[index]
+                call: OptionData = chain.calls[index]
+                put: OptionData = chain.puts[index]
 
                 current_row += 1
 
                 # Call cells
-                call_cells = {}
+                call_cells: dict = {}
 
                 for column, d in enumerate(self.headers):
                     value = getattr(call, d["name"], "")
@@ -213,8 +215,8 @@ class OptionMarketMonitor(MonitorTable):
                 self.cells[call.vt_symbol] = call_cells
 
                 # Put cells
-                put_cells = {}
-                put_headers = copy(self.headers)
+                put_cells: dict = {}
+                put_headers: list = copy(self.headers)
                 put_headers.reverse()
 
                 for column, d in enumerate(put_headers):
@@ -230,7 +232,7 @@ class OptionMarketMonitor(MonitorTable):
                 self.cells[put.vt_symbol] = put_cells
 
                 # Strike cell
-                index_cell = IndexCell(str(call.chain_index))
+                index_cell: IndexCell = IndexCell(str(call.chain_index))
                 self.setItem(current_row, strike_column, index_cell)
 
             # Move to next row
@@ -248,14 +250,14 @@ class OptionMarketMonitor(MonitorTable):
 
     def process_tick_event(self, event: Event) -> None:
         """"""
-        tick = event.data
+        tick: TickData = event.data
 
         if tick.vt_symbol in self.option_symbols:
             self.update_price(tick.vt_symbol)
             self.update_impv(tick.vt_symbol)
             self.update_greeks(tick.vt_symbol)
         elif tick.vt_symbol in self.underlying_option_map:
-            option_symbols = self.underlying_option_map[tick.vt_symbol]
+            option_symbols: list = self.underlying_option_map[tick.vt_symbol]
 
             for vt_symbol in option_symbols:
                 self.update_impv(vt_symbol)
@@ -263,32 +265,32 @@ class OptionMarketMonitor(MonitorTable):
 
     def process_trade_event(self, event: Event) -> None:
         """"""
-        trade = event.data
+        trade: TradeData = event.data
         self.update_pos(trade.vt_symbol)
 
     def process_position_event(self, event: Event) -> None:
         """"""
-        position = event.data
+        position: PositionData = event.data
         self.update_pos(position.vt_symbol)
 
     def update_pos(self, vt_symbol: str) -> None:
         """"""
-        option_cells = self.cells.get(vt_symbol, None)
+        option_cells: dict = self.cells.get(vt_symbol, None)
         if not option_cells:
             return
 
-        option = self.option_engine.get_instrument(vt_symbol)
+        option: InstrumentData = self.option_engine.get_instrument(vt_symbol)
 
         option_cells["net_pos"].setText(str(option.net_pos))
 
     def update_price(self, vt_symbol: str) -> None:
         """"""
-        option_cells = self.cells.get(vt_symbol, None)
+        option_cells: dict = self.cells.get(vt_symbol, None)
         if not option_cells:
             return
 
-        option = self.option_engine.get_instrument(vt_symbol)
-        tick = option.tick
+        option: InstrumentData = self.option_engine.get_instrument(vt_symbol)
+        tick: TickData = option.tick
         option_cells["bid_price"].setText(f'{tick.bid_price_1:0.4f}')
         option_cells["bid_volume"].setText(str(tick.bid_volume_1))
         option_cells["ask_price"].setText(f'{tick.ask_price_1:0.4f}')
@@ -298,21 +300,21 @@ class OptionMarketMonitor(MonitorTable):
 
     def update_impv(self, vt_symbol: str) -> None:
         """"""
-        option_cells = self.cells.get(vt_symbol, None)
+        option_cells: dict = self.cells.get(vt_symbol, None)
         if not option_cells:
             return
 
-        option = self.option_engine.get_instrument(vt_symbol)
+        option: InstrumentData = self.option_engine.get_instrument(vt_symbol)
         option_cells["bid_impv"].setText(f"{option.bid_impv * 100:.2f}")
         option_cells["ask_impv"].setText(f"{option.ask_impv * 100:.2f}")
 
     def update_greeks(self, vt_symbol: str) -> None:
         """"""
-        option_cells = self.cells.get(vt_symbol, None)
+        option_cells: dict = self.cells.get(vt_symbol, None)
         if not option_cells:
             return
 
-        option = self.option_engine.get_instrument(vt_symbol)
+        option: InstrumentData = self.option_engine.get_instrument(vt_symbol)
 
         option_cells["cash_delta"].setText(f"{option.cash_delta:.{self.greeks_precision}}")
         option_cells["cash_gamma"].setText(f"{option.cash_gamma:.{self.greeks_precision}}")
@@ -338,13 +340,13 @@ class OptionGreeksMonitor(MonitorTable):
 
     ROW_DATA = Union[OptionData, UnderlyingData, ChainData, PortfolioData]
 
-    def __init__(self, option_engine: OptionEngine, portfolio_name: str):
+    def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """"""
         super().__init__()
 
-        self.option_engine = option_engine
-        self.event_engine = option_engine.event_engine
-        self.portfolio_name = portfolio_name
+        self.option_engine: OptionEngine = option_engine
+        self.event_engine: EventEngine = option_engine.event_engine
+        self.portfolio_name: str = portfolio_name
 
         self.cells: Dict[str, Dict] = {}
         self.option_symbols: Set[str] = set()
@@ -360,45 +362,45 @@ class OptionGreeksMonitor(MonitorTable):
         self.setEditTriggers(self.NoEditTriggers)
 
         # Store option and underlying symbols
-        portfolio = self.option_engine.get_portfolio(self.portfolio_name)
+        portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
 
         for option in portfolio.options.values():
             self.option_symbols.add(option.vt_symbol)
             self.underlying_option_map[option.underlying.vt_symbol].append(option.vt_symbol)
 
         # Get greeks decimals precision
-        self.greeks_precision = f"{portfolio.precision}f"
+        self.greeks_precision: str = f"{portfolio.precision}f"
 
         # Set table row and column numbers
-        row_count = 1
+        row_count: int = 1
         for chain in portfolio.chains.values():
             row_count += (1 + len(chain.indexes) * 2)
         self.setRowCount(row_count)
 
-        column_count = len(self.headers) + 2
+        column_count: int = len(self.headers) + 2
         self.setColumnCount(column_count)
 
-        labels = ["类别", "代码"] + [d["display"] for d in self.headers]
+        labels: list = ["类别", "代码"] + [d["display"] for d in self.headers]
         self.setHorizontalHeaderLabels(labels)
 
         # Init cells
-        row_settings = []
+        row_settings: list = []
         row_settings.append((self.portfolio_name, "组合"))
         row_settings.append(None)
 
-        underlying_symbols = list(portfolio.underlyings.keys())
+        underlying_symbols: list = list(portfolio.underlyings.keys())
         underlying_symbols.sort()
         for underlying_symbol in underlying_symbols:
             row_settings.append((underlying_symbol, "标的"))
         row_settings.append(None)
 
-        chain_symbols = list(portfolio.chains.keys())
+        chain_symbols: list = list(portfolio.chains.keys())
         chain_symbols.sort()
         for chain_symbol in chain_symbols:
             row_settings.append((chain_symbol, "期权链"))
         row_settings.append(None)
 
-        option_symbols = list(portfolio.options.keys())
+        option_symbols: list = list(portfolio.options.keys())
         option_symbols.sort()
         for option_symbol in option_symbols:
             row_settings.append((option_symbol, "期权"))
@@ -408,14 +410,14 @@ class OptionGreeksMonitor(MonitorTable):
                 continue
             row_name, type_name = row_key
 
-            type_cell = MonitorCell(type_name)
+            type_cell: MonitorCell = MonitorCell(type_name)
             self.setItem(row, 0, type_cell)
 
             name = row_name.split(".")[0]
-            name_cell = MonitorCell(name)
+            name_cell: MonitorCell = MonitorCell(name)
             self.setItem(row, 1, name_cell)
 
-            row_cells = {}
+            row_cells: dict = {}
             for column, d in enumerate(self.headers):
                 cell = d["cell"]()
                 self.setItem(row, column + 2, cell)
@@ -439,7 +441,7 @@ class OptionGreeksMonitor(MonitorTable):
 
     def process_tick_event(self, event: Event) -> None:
         """"""
-        tick = event.data
+        tick: TickData = event.data
 
         if tick.vt_symbol not in self.underlying_option_map:
             return
@@ -448,7 +450,7 @@ class OptionGreeksMonitor(MonitorTable):
 
     def process_trade_event(self, event: Event) -> None:
         """"""
-        trade = event.data
+        trade: TradeData = event.data
         if trade.vt_symbol not in self.cells:
             return
 
@@ -456,7 +458,7 @@ class OptionGreeksMonitor(MonitorTable):
 
     def process_position_event(self, event: Event) -> None:
         """"""
-        position = event.data
+        position: PositionData = event.data
         if position.vt_symbol not in self.cells:
             return
 
@@ -464,7 +466,7 @@ class OptionGreeksMonitor(MonitorTable):
 
     def update_underlying_tick(self, vt_symbol: str) -> None:
         """"""
-        underlying = self.option_engine.get_instrument(vt_symbol)
+        underlying: InstrumentData = self.option_engine.get_instrument(vt_symbol)
         self.update_row(vt_symbol, "标的", underlying)
 
         for chain in underlying.chains.values():
@@ -473,12 +475,12 @@ class OptionGreeksMonitor(MonitorTable):
             for option in chain.options.values():
                 self.update_row(option.vt_symbol, "期权", option)
 
-        portfolio = underlying.portfolio
+        portfolio: PositionData = underlying.portfolio
         self.update_row(portfolio.name, "组合", portfolio)
 
     def update_pos(self, vt_symbol: str) -> None:
         """"""
-        instrument = self.option_engine.get_instrument(vt_symbol)
+        instrument: InstrumentData = self.option_engine.get_instrument(vt_symbol)
         if isinstance(instrument, OptionData):
             self.update_row(vt_symbol, "期权", instrument)
         else:
@@ -486,17 +488,17 @@ class OptionGreeksMonitor(MonitorTable):
 
         # For option, greeks of chain also needs to be updated.
         if isinstance(instrument, OptionData):
-            chain = instrument.chain
+            chain: ChainData = instrument.chain
             self.update_row(chain.chain_symbol, "期权链", chain)
 
-        portfolio = instrument.portfolio
+        portfolio: PortfolioData = instrument.portfolio
         self.update_row(portfolio.name, "组合", portfolio)
 
     def update_row(self, row_name: str, type_name: str, row_data: ROW_DATA) -> None:
         """"""
-        row_key = (row_name, type_name)
-        row_cells = self.cells[row_key]
-        row = self.row(row_cells["long_pos"])
+        row_key: tuple = (row_name, type_name)
+        row_cells: dict = self.cells[row_key]
+        row: int = self.row(row_cells["long_pos"])
 
         # Hide rows with no existing position
         if not row_data.long_pos and not row_data.short_pos:
@@ -525,9 +527,9 @@ class OptionChainMonitor(MonitorTable):
         """"""
         super().__init__()
 
-        self.option_engine = option_engine
-        self.event_engine = option_engine.event_engine
-        self.portfolio_name = portfolio_name
+        self.option_engine: OptionEngine = option_engine
+        self.event_engine: EventEngine = option_engine.event_engine
+        self.portfolio_name: str = portfolio_name
 
         self.cells: Dict[str, Dict] = {}
 
@@ -541,23 +543,23 @@ class OptionChainMonitor(MonitorTable):
         self.setEditTriggers(self.NoEditTriggers)
 
         # Store option and underlying symbols
-        portfolio = self.option_engine.get_portfolio(self.portfolio_name)
+        portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
 
         # Set table row and column numbers
         self.setRowCount(len(portfolio.chains))
 
-        labels = ["期权链", "剩余交易日", "标的物", "升贴水"]
+        labels: list = ["期权链", "剩余交易日", "标的物", "升贴水"]
         self.setColumnCount(len(labels))
         self.setHorizontalHeaderLabels(labels)
 
         # Init cells
-        chain_symbols = list(portfolio.chains.keys())
+        chain_symbols: list = list(portfolio.chains.keys())
         chain_symbols.sort()
 
         for row, chain_symbol in enumerate(chain_symbols):
-            chain = portfolio.chains[chain_symbol]
-            adjustment_cell = MonitorCell()
-            underlying_cell = MonitorCell()
+            chain: ChainData = portfolio.chains[chain_symbol]
+            adjustment_cell: MonitorCell = MonitorCell()
+            underlying_cell: MonitorCell = MonitorCell()
 
             self.setItem(row, 0, MonitorCell(chain.chain_symbol.split(".")[0]))
             self.setItem(row, 1, MonitorCell(str(chain.days_to_expiry)))
@@ -581,7 +583,7 @@ class OptionChainMonitor(MonitorTable):
 
     def process_timer_event(self, event: Event) -> None:
         """"""
-        portfolio = self.option_engine.get_portfolio(self.portfolio_name)
+        portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
 
         for chain in portfolio.chains.values():
             underlying: UnderlyingData = chain.underlying
@@ -596,6 +598,6 @@ class OptionChainMonitor(MonitorTable):
             else:
                 adjustment = 0
 
-            chain_cells = self.cells[chain.chain_symbol]
+            chain_cells: dict = self.cells[chain.chain_symbol]
             chain_cells["underlying"].setText(underlying_symbol)
             chain_cells["adjustment"].setText(str(adjustment))

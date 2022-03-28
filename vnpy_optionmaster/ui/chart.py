@@ -5,8 +5,8 @@ import pyqtgraph as pg
 from vnpy.trader.ui import QtWidgets, QtCore
 from vnpy.trader.event import EVENT_TIMER
 
-from ..base import PortfolioData
-from ..engine import OptionEngine, Event
+from ..base import PortfolioData, OptionData
+from ..engine import OptionEngine, Event, EventEngine
 from ..time import ANNUAL_DAYS
 
 import numpy as np
@@ -27,23 +27,23 @@ class OptionVolatilityChart(QtWidgets.QWidget):
 
     signal_timer = QtCore.pyqtSignal(Event)
 
-    def __init__(self, option_engine: OptionEngine, portfolio_name: str):
+    def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """"""
         super().__init__()
 
-        self.option_engine = option_engine
-        self.event_engine = option_engine.event_engine
-        self.portfolio_name = portfolio_name
+        self.option_engine: OptionEngine = option_engine
+        self.event_engine: EventEngine = option_engine.event_engine
+        self.portfolio_name: str = portfolio_name
 
-        self.timer_count = 0
-        self.timer_trigger = 3
+        self.timer_count: int = 0
+        self.timer_trigger: int = 3
 
         self.chain_checks: Dict[str, QtWidgets.QCheckBox] = {}
         self.put_curves: Dict[str, pg.PlotCurveItem] = {}
         self.call_curves: Dict[str, pg.PlotCurveItem] = {}
         self.pricing_curves: Dict[str, pg.PlotCurveItem] = {}
 
-        self.colors: List = [
+        self.colors: list = [
             (255, 0, 0),
             (255, 255, 0),
             (0, 255, 0),
@@ -63,16 +63,16 @@ class OptionVolatilityChart(QtWidgets.QWidget):
         self.setWindowTitle("波动率曲线")
 
         # Create checkbox for each chain
-        hbox = QtWidgets.QHBoxLayout()
-        portfolio = self.option_engine.get_portfolio(self.portfolio_name)
+        hbox: QtWidgets.QHBoxLayout = QtWidgets.QHBoxLayout()
+        portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
 
-        chain_symbols = list(portfolio.chains.keys())
+        chain_symbols: list = list(portfolio.chains.keys())
         chain_symbols.sort()
 
         hbox.addStretch()
 
         for chain_symbol in chain_symbols:
-            chain_check = QtWidgets.QCheckBox()
+            chain_check: QtWidgets.QCheckBox = QtWidgets.QCheckBox()
             chain_check.setText(chain_symbol.split(".")[0])
             chain_check.setChecked(True)
             chain_check.stateChanged.connect(self.update_curve_visible)
@@ -85,7 +85,7 @@ class OptionVolatilityChart(QtWidgets.QWidget):
         # Create graphics window
         pg.setConfigOptions(antialias=True)
 
-        graphics_window = pg.GraphicsLayoutWidget()
+        graphics_window: pg.GraphicsLayoutWidget = pg.GraphicsLayoutWidget()
         self.impv_chart = graphics_window.addPlot(title="隐含波动率曲线")
         self.impv_chart.showGrid(x=True, y=True)
         self.impv_chart.setLabel("left", "波动率")
@@ -98,7 +98,7 @@ class OptionVolatilityChart(QtWidgets.QWidget):
             self.add_impv_curve(chain_symbol)
 
         # Set Layout
-        vbox = QtWidgets.QVBoxLayout()
+        vbox: QtWidgets.QVBoxLayout = QtWidgets.QVBoxLayout()
         vbox.addLayout(hbox)
         vbox.addWidget(graphics_window)
         self.setLayout(vbox)
@@ -120,9 +120,9 @@ class OptionVolatilityChart(QtWidgets.QWidget):
 
     def add_impv_curve(self, chain_symbol: str) -> None:
         """"""
-        symbol_size = 14
-        symbol = chain_symbol.split(".")[0]
-        color = self.colors.pop(0)
+        symbol_size: int = 14
+        symbol: str = chain_symbol.split(".")[0]
+        color: tuple = self.colors.pop(0)
         pen = pg.mkPen(color, width=2)
 
         self.call_curves[chain_symbol] = self.impv_chart.plot(
@@ -152,18 +152,18 @@ class OptionVolatilityChart(QtWidgets.QWidget):
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
 
         for chain in portfolio.chains.values():
-            call_impv = []
-            put_impv = []
-            pricing_impv = []
-            strike_prices = []
+            call_impv: list = []
+            put_impv: list = []
+            pricing_impv: list = []
+            strike_prices: list = []
 
             for index in chain.indexes:
-                call = chain.calls[index]
+                call: OptionData = chain.calls[index]
                 call_impv.append(call.mid_impv * 100)
                 pricing_impv.append(call.pricing_impv * 100)
                 strike_prices.append(call.strike_price)
 
-                put = chain.puts[index]
+                put: OptionData = chain.puts[index]
                 put_impv.append(put.mid_impv * 100)
 
             self.call_curves[chain.chain_symbol].setData(
@@ -185,9 +185,9 @@ class OptionVolatilityChart(QtWidgets.QWidget):
 
         for chain_symbol, checkbox in self.chain_checks.items():
             if checkbox.isChecked():
-                call_curve = self.call_curves[chain_symbol]
-                put_curve = self.put_curves[chain_symbol]
-                pricing_curve = self.pricing_curves[chain_symbol]
+                call_curve: pg.PlotCurveItem = self.call_curves[chain_symbol]
+                put_curve: pg.PlotCurveItem = self.put_curves[chain_symbol]
+                pricing_curve: pg.PlotCurveItem = self.pricing_curves[chain_symbol]
 
                 self.impv_chart.addItem(call_curve)
                 self.impv_chart.addItem(put_curve)
@@ -197,12 +197,12 @@ class OptionVolatilityChart(QtWidgets.QWidget):
 class ScenarioAnalysisChart(QtWidgets.QWidget):
     """"""
 
-    def __init__(self, option_engine: OptionEngine, portfolio_name: str):
+    def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """"""
         super().__init__()
 
-        self.option_engine = option_engine
-        self.portfolio_name = portfolio_name
+        self.option_engine: OptionEngine = option_engine
+        self.portfolio_name: str = portfolio_name
 
         self.init_ui()
 
@@ -211,22 +211,22 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
         self.setWindowTitle("情景分析")
 
         # Create widgets
-        self.price_change_spin = QtWidgets.QSpinBox()
+        self.price_change_spin: QtWidgets.QSpinBox = QtWidgets.QSpinBox()
         self.price_change_spin.setSuffix("%")
         self.price_change_spin.setMinimum(2)
         self.price_change_spin.setValue(10)
 
-        self.impv_change_spin = QtWidgets.QSpinBox()
+        self.impv_change_spin: QtWidgets.QSpinBox = QtWidgets.QSpinBox()
         self.impv_change_spin.setSuffix("%")
         self.impv_change_spin.setMinimum(2)
         self.impv_change_spin.setValue(10)
 
-        self.time_change_spin = QtWidgets.QSpinBox()
+        self.time_change_spin: QtWidgets.QSpinBox = QtWidgets.QSpinBox()
         self.time_change_spin.setSuffix("日")
         self.time_change_spin.setMinimum(0)
         self.time_change_spin.setValue(1)
 
-        self.target_combo = QtWidgets.QComboBox()
+        self.target_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
         self.target_combo.addItems([
             "盈亏",
             "Delta",
@@ -235,12 +235,12 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
             "Vega"
         ])
 
-        button = QtWidgets.QPushButton("执行分析")
+        button: QtWidgets.QPushButton = QtWidgets.QPushButton("执行分析")
         button.clicked.connect(self.run_analysis)
 
         # Create charts
-        fig = Figure()
-        canvas = FigureCanvas(fig)
+        fig: Figure = Figure()
+        canvas: FigureCanvas = FigureCanvas(fig)
 
         self.ax = fig.gca(projection="3d")
         self.ax.set_xlabel("价格涨跌 %")
@@ -248,14 +248,14 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
         self.ax.set_zlabel("盈亏")
 
         # Set layout
-        hbox1 = QtWidgets.QHBoxLayout()
+        hbox1: QtWidgets.QHBoxLayout = QtWidgets.QHBoxLayout()
         hbox1.addWidget(QtWidgets.QLabel("目标数据"))
         hbox1.addWidget(self.target_combo)
         hbox1.addWidget(QtWidgets.QLabel("时间衰减"))
         hbox1.addWidget(self.time_change_spin)
         hbox1.addStretch()
 
-        hbox2 = QtWidgets.QHBoxLayout()
+        hbox2: QtWidgets.QHBoxLayout = QtWidgets.QHBoxLayout()
         hbox2.addWidget(QtWidgets.QLabel("价格变动"))
         hbox2.addWidget(self.price_change_spin)
         hbox2.addWidget(QtWidgets.QLabel("波动率变动"))
@@ -263,7 +263,7 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
         hbox2.addStretch()
         hbox2.addWidget(button)
 
-        vbox = QtWidgets.QVBoxLayout()
+        vbox: QtWidgets.QVBoxLayout = QtWidgets.QVBoxLayout()
         vbox.addLayout(hbox1)
         vbox.addLayout(hbox2)
         vbox.addWidget(canvas)
@@ -273,7 +273,7 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
     def run_analysis(self) -> None:
         """"""
         # Generate range
-        portfolio = self.option_engine.get_portfolio(self.portfolio_name)
+        portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
 
         price_change_range = self.price_change_spin.value()
         price_changes = np.arange(-price_change_range, price_change_range + 1) / 100
@@ -296,18 +296,18 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
                 return
 
         # Run analysis calculation
-        pnls = []
-        deltas = []
-        gammas = []
-        thetas = []
-        vegas = []
+        pnls: list = []
+        deltas: list = []
+        gammas: list = []
+        thetas: list = []
+        vegas: list = []
 
         for impv_change in impv_changes:
-            pnl_buf = []
-            delta_buf = []
-            gamma_buf = []
-            theta_buf = []
-            vega_buf = []
+            pnl_buf: list = []
+            delta_buf: list = []
+            gamma_buf: list = []
+            theta_buf: list = []
+            vega_buf: list = []
 
             for price_change in price_changes:
                 portfolio_pnl = 0
