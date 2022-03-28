@@ -346,7 +346,7 @@ class OptionGreeksMonitor(MonitorTable):
         self.event_engine = option_engine.event_engine
         self.portfolio_name = portfolio_name
 
-        self.cells: Dict[str, Dict] = {}
+        self.cells: Dict[tuple, Dict] = {}
         self.option_symbols: Set[str] = set()
         self.underlying_option_map: Dict[str, List] = defaultdict(list)
 
@@ -449,7 +449,7 @@ class OptionGreeksMonitor(MonitorTable):
     def process_trade_event(self, event: Event) -> None:
         """"""
         trade = event.data
-        if trade.vt_symbol not in self.cells:
+        if trade.vt_symbol not in self.underlying_option_map:
             return
 
         self.update_pos(trade.vt_symbol)
@@ -457,7 +457,7 @@ class OptionGreeksMonitor(MonitorTable):
     def process_position_event(self, event: Event) -> None:
         """"""
         position = event.data
-        if position.vt_symbol not in self.cells:
+        if position.vt_symbol not in self.underlying_option_map:
             return
 
         self.update_pos(position.vt_symbol)
