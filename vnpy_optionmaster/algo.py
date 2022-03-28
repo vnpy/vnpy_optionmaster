@@ -4,7 +4,7 @@ from vnpy.trader.object import TickData, OrderData, TradeData
 from vnpy.trader.constant import Direction, Offset
 from vnpy.trader.utility import round_to
 
-from .base import OptionData, UnderlyingData
+from .base import OptionData
 
 if TYPE_CHECKING:
     from .engine import OptionAlgoEngine
@@ -16,13 +16,13 @@ class ElectronicEyeAlgo:
         self,
         algo_engine: "OptionAlgoEngine",
         option: OptionData
-    ) -> None:
+    ):
         """"""
-        self.algo_engine: OptionAlgoEngine = algo_engine
-        self.option: OptionData = option
-        self.underlying: UnderlyingData = option.underlying
-        self.pricetick: float = option.pricetick
-        self.vt_symbol: str = option.vt_symbol
+        self.algo_engine = algo_engine
+        self.option = option
+        self.underlying = option.underlying
+        self.pricetick = option.pricetick
+        self.vt_symbol = option.vt_symbol
 
         # Parameters
         self.pricing_active: bool = False
@@ -31,8 +31,8 @@ class ElectronicEyeAlgo:
         self.price_spread: float = 0.0
         self.volatility_spread: float = 0.0
 
-        self.long_allowed: bool = False
-        self.short_allowed: bool = False
+        self.long_allowed = False
+        self.short_allowed = False
 
         self.max_pos: int = 0
         self.target_pos: int = 0
@@ -152,7 +152,7 @@ class ElectronicEyeAlgo:
 
     def on_trade(self, trade: TradeData) -> None:
         """"""
-        msg: str = (
+        msg = (
             f"委托成交，{trade.direction} {trade.offset} {trade.volume}@{trade.price}，"
             f"委托号[{trade.vt_orderid}，成交号[{trade.vt_tradeid}]"
         )
@@ -174,7 +174,7 @@ class ElectronicEyeAlgo:
         volume: int
     ) -> str:
         """"""
-        vt_orderid: str = self.algo_engine.send_order(
+        vt_orderid = self.algo_engine.send_order(
             self,
             self.vt_symbol,
             direction,
@@ -189,27 +189,27 @@ class ElectronicEyeAlgo:
 
     def buy(self, price: float, volume: int) -> None:
         """"""
-        vt_orderid: str = self.send_order(Direction.LONG, Offset.OPEN, price, volume)
+        vt_orderid = self.send_order(Direction.LONG, Offset.OPEN, price, volume)
         self.long_active_orderids.add(vt_orderid)
 
     def sell(self, price: float, volume: int) -> None:
         """"""
-        vt_orderid: str = self.send_order(Direction.SHORT, Offset.CLOSE, price, volume)
+        vt_orderid = self.send_order(Direction.SHORT, Offset.CLOSE, price, volume)
         self.short_active_orderids.add(vt_orderid)
 
     def short(self, price: float, volume: int) -> None:
         """"""
-        vt_orderid: str = self.send_order(Direction.SHORT, Offset.OPEN, price, volume)
+        vt_orderid = self.send_order(Direction.SHORT, Offset.OPEN, price, volume)
         self.short_active_orderids.add(vt_orderid)
 
     def cover(self, price: float, volume: int) -> None:
         """"""
-        vt_orderid: str = self.send_order(Direction.LONG, Offset.CLOSE, price, volume)
+        vt_orderid = self.send_order(Direction.LONG, Offset.CLOSE, price, volume)
         self.long_active_orderids.add(vt_orderid)
 
     def send_long(self, price: float, volume: int) -> None:
         """"""
-        option: OptionData = self.option
+        option = self.option
 
         if not option.short_pos:
             self.buy(price, volume)
@@ -221,7 +221,7 @@ class ElectronicEyeAlgo:
 
     def send_short(self, price: float, volume: int) -> None:
         """"""
-        option: OptionData = self.option
+        option = self.option
 
         if not option.long_pos:
             self.short(price, volume)
@@ -265,19 +265,19 @@ class ElectronicEyeAlgo:
 
     def calculate_price(self) -> None:
         """"""
-        option: OptionData = self.option
+        option = self.option
 
         # Get ref price
         self.pricing_impv = option.pricing_impv
-        ref_price: float = option.calculate_ref_price()
+        ref_price = option.calculate_ref_price()
         self.ref_price = round_to(ref_price, self.pricetick)
 
         # Calculate spread
-        algo_spread: float = max(
+        algo_spread = max(
             self.price_spread,
             self.volatility_spread * option.cash_vega / option.size
         )
-        half_spread: float = algo_spread / 2
+        half_spread = algo_spread / 2
 
         # Calculate bid/ask
         self.algo_bid_price = round_to(ref_price - half_spread, self.pricetick)
@@ -296,8 +296,8 @@ class ElectronicEyeAlgo:
 
     def snipe_long(self) -> None:
         """"""
-        option: OptionData = self.option
-        tick: TickData = option.tick
+        option = self.option
+        tick = option.tick
 
         # Calculate volume left to trade
         pos_up_limit = self.target_pos + self.max_pos
@@ -315,8 +315,8 @@ class ElectronicEyeAlgo:
 
     def snipe_short(self) -> None:
         """"""
-        option: OptionData = self.option
-        tick: TickData = option.tick
+        option = self.option
+        tick = option.tick
 
         # Calculate volume left to trade
         pos_down_limit = self.target_pos - self.max_pos
