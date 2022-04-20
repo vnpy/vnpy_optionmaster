@@ -449,7 +449,7 @@ class OptionGreeksMonitor(MonitorTable):
     def process_trade_event(self, event: Event) -> None:
         """"""
         trade = event.data
-        if trade.vt_symbol not in self.underlying_option_map:
+        if trade.vt_symbol not in self.option_symbols:
             return
 
         self.update_pos(trade.vt_symbol)
@@ -457,7 +457,7 @@ class OptionGreeksMonitor(MonitorTable):
     def process_position_event(self, event: Event) -> None:
         """"""
         position = event.data
-        if position.vt_symbol not in self.underlying_option_map:
+        if position.vt_symbol not in self.option_symbols:
             return
 
         self.update_pos(position.vt_symbol)
