@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from copy import copy
 from functools import partial
 
@@ -199,10 +199,10 @@ class AlgoTradingButton(QtWidgets.QPushButton):
 class ElectronicEyeMonitor(QtWidgets.QTableWidget):
     """"""
 
-    signal_tick = QtCore.pyqtSignal(Event)
-    signal_pricing = QtCore.pyqtSignal(Event)
-    signal_status = QtCore.pyqtSignal(Event)
-    signal_trade = QtCore.pyqtSignal(Event)
+    signal_tick: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
+    signal_pricing: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
+    signal_status: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
+    signal_trade: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
 
     headers: List[Dict] = [
         {"name": "bid_volume", "display": "买量", "cell": BidCell},
@@ -345,7 +345,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         for vt_symbol in self.cells.keys():
             self.update_net_pos(vt_symbol)
 
-            tick: TickData = self.main_engine.get_tick(vt_symbol)
+            tick: Optional[TickData] = self.main_engine.get_tick(vt_symbol)
             if tick:
                 self.update_tick(tick)
 
@@ -705,7 +705,7 @@ class VolatilityDoubleSpinBox(QtWidgets.QDoubleSpinBox):
 class PricingVolatilityManager(QtWidgets.QWidget):
     """"""
 
-    signal_timer = QtCore.pyqtSignal(Event)
+    signal_timer: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """"""

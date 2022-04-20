@@ -13,14 +13,14 @@ from vnpy.trader.utility import extract_vt_symbol
 from .time import calculate_days_to_expiry, ANNUAL_DAYS
 
 
-APP_NAME: str = "OptionMaster"
+APP_NAME = "OptionMaster"
 
-EVENT_OPTION_NEW_PORTFOLIO: str = "eOptionNewPortfolio"
-EVENT_OPTION_ALGO_PRICING: str = "eOptionAlgoPricing"
-EVENT_OPTION_ALGO_TRADING: str = "eOptionAlgoTrading"
-EVENT_OPTION_ALGO_STATUS: str = "eOptionAlgoStatus"
-EVENT_OPTION_ALGO_LOG: str = "eOptionAlgoLog"
-EVENT_OPTION_RISK_NOTICE: str = "eOptionRiskNotice"
+EVENT_OPTION_NEW_PORTFOLIO = "eOptionNewPortfolio"
+EVENT_OPTION_ALGO_PRICING = "eOptionAlgoPricing"
+EVENT_OPTION_ALGO_TRADING = "eOptionAlgoTrading"
+EVENT_OPTION_ALGO_STATUS = "eOptionAlgoStatus"
+EVENT_OPTION_ALGO_LOG = "eOptionAlgoLog"
+EVENT_OPTION_RISK_NOTICE = "eOptionRiskNotice"
 
 
 CHAIN_UNDERLYING_MAP: dict = {
@@ -314,7 +314,7 @@ class UnderlyingData(InstrumentData):
 
         self.cash_delta: float = 0
         self.pos_delta: float = 0
-        self.chains: Dict[str: ChainData] = {}
+        self.chains: Dict[str, ChainData] = {}
 
     def add_chain(self, chain: "ChainData") -> None:
         """"""
@@ -678,7 +678,7 @@ class PortfolioData:
         """"""
         underlying: UnderlyingData = self.underlyings.get(contract.vt_symbol, None)
         if not underlying:
-            underlying: UnderlyingData = UnderlyingData(contract)
+            underlying = UnderlyingData(contract)
             underlying.set_portfolio(self)
             self.underlyings[contract.vt_symbol] = underlying
 
@@ -696,7 +696,7 @@ class PortfolioData:
         chain: ChainData = self._chains.get(chain_symbol, None)
 
         if not chain:
-            chain: ChainData = ChainData(chain_symbol, self.event_engine)
+            chain = ChainData(chain_symbol, self.event_engine)
             chain.set_portfolio(self)
             self._chains[chain_symbol] = chain
 
