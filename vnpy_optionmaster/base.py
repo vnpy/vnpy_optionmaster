@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Dict, List, Callable
+from typing import Dict, List, Callable, Optional
 from types import ModuleType
 
 from vnpy.event import EventEngine
@@ -676,7 +676,7 @@ class PortfolioData:
 
     def set_chain_underlying(self, chain_symbol: str, contract: ContractData) -> None:
         """"""
-        underlying: UnderlyingData = self.underlyings.get(contract.vt_symbol, None)
+        underlying: Optional[UnderlyingData] = self.underlyings.get(contract.vt_symbol, None)
         if not underlying:
             underlying = UnderlyingData(contract)
             underlying.set_portfolio(self)
@@ -693,7 +693,7 @@ class PortfolioData:
 
     def get_chain(self, chain_symbol: str) -> ChainData:
         """"""
-        chain: ChainData = self._chains.get(chain_symbol, None)
+        chain: Optional[ChainData] = self._chains.get(chain_symbol, None)
 
         if not chain:
             chain = ChainData(chain_symbol, self.event_engine)

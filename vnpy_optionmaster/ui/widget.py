@@ -476,7 +476,7 @@ class OptionManualTrader(QtWidgets.QWidget):
     def send_order(self) -> None:
         """"""
         symbol: str = self.symbol_line.text()
-        contract: ContractData = self.contracts.get(symbol, None)
+        contract: Optional[ContractData] = self.contracts.get(symbol, None)
         if not contract:
             return
 
@@ -520,7 +520,7 @@ class OptionManualTrader(QtWidgets.QWidget):
     def _update_symbol(self) -> None:
         """"""
         symbol: str = self.symbol_line.text()
-        contract: ContractData = self.contracts.get(symbol, None)
+        contract: Optional[ContractData] = self.contracts.get(symbol, None)
 
         if contract and contract.vt_symbol == self.vt_symbol:
             return

@@ -1,4 +1,4 @@
-from typing import List, Dict, Set, Union
+from typing import List, Dict, Set, Union, Optional
 from copy import copy
 from collections import defaultdict
 
@@ -275,7 +275,7 @@ class OptionMarketMonitor(MonitorTable):
 
     def update_pos(self, vt_symbol: str) -> None:
         """"""
-        option_cells: dict = self.cells.get(vt_symbol, None)
+        option_cells: Optional[dict] = self.cells.get(vt_symbol, None)
         if not option_cells:
             return
 
@@ -285,7 +285,7 @@ class OptionMarketMonitor(MonitorTable):
 
     def update_price(self, vt_symbol: str) -> None:
         """"""
-        option_cells: dict = self.cells.get(vt_symbol, None)
+        option_cells: Optional[dict] = self.cells.get(vt_symbol, None)
         if not option_cells:
             return
 
@@ -300,7 +300,7 @@ class OptionMarketMonitor(MonitorTable):
 
     def update_impv(self, vt_symbol: str) -> None:
         """"""
-        option_cells: dict = self.cells.get(vt_symbol, None)
+        option_cells: Optional[dict] = self.cells.get(vt_symbol, None)
         if not option_cells:
             return
 
@@ -310,7 +310,7 @@ class OptionMarketMonitor(MonitorTable):
 
     def update_greeks(self, vt_symbol: str) -> None:
         """"""
-        option_cells: dict = self.cells.get(vt_symbol, None)
+        option_cells: Optional[dict] = self.cells.get(vt_symbol, None)
         if not option_cells:
             return
 

@@ -363,7 +363,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         setting: dict = load_json(self.setting_filename)
 
         for vt_symbol, cells in self.cells.items():
-            buf = setting.get(vt_symbol, None)
+            buf: Optional[dict] = setting.get(vt_symbol, None)
             if buf:
                 for field in fields:
                     cells[field].set_value(buf[field])
@@ -419,7 +419,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
 
     def update_tick(self, tick: TickData) -> None:
         """"""
-        cells: dict = self.cells.get(tick.vt_symbol, None)
+        cells: Optional[dict] = self.cells.get(tick.vt_symbol, None)
         if not cells:
             return
 
@@ -468,7 +468,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
 
     def update_net_pos(self, vt_symbol: str) -> None:
         """"""
-        cells: dict = self.cells.get(vt_symbol, None)
+        cells: Optional[dict] = self.cells.get(vt_symbol, None)
         if not cells:
             return
 
@@ -950,7 +950,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
             value: int = round(otm.pricing_impv * 100, 1)
 
             key: tuple = (chain_symbol, index)
-            cells = self.cells.get(key, None)
+            cells: Optional[dict] = self.cells.get(key, None)
             if cells:
                 cells["pricing_impv"].setValue(value)
 

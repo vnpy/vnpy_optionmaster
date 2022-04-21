@@ -163,7 +163,7 @@ class OptionEngine(BaseEngine):
         """"""
         tick: TickData = event.data
 
-        instrument: InstrumentData = self.instruments.get(tick.vt_symbol, None)
+        instrument: Optional[InstrumentData] = self.instruments.get(tick.vt_symbol, None)
         if not instrument:
             return
 
@@ -183,7 +183,7 @@ class OptionEngine(BaseEngine):
         trade: TradeData = event.data
         self.offset_converter.update_trade(trade)
 
-        instrument: InstrumentData = self.instruments.get(trade.vt_symbol, None)
+        instrument: Optional[InstrumentData] = self.instruments.get(trade.vt_symbol, None)
         if not instrument:
             return
 
@@ -223,7 +223,7 @@ class OptionEngine(BaseEngine):
 
     def get_portfolio(self, portfolio_name: str) -> PortfolioData:
         """"""
-        portfolio: PositionData = self.portfolios.get(portfolio_name, None)
+        portfolio: Optional[PositionData] = self.portfolios.get(portfolio_name, None)
         if not portfolio:
             portfolio = PortfolioData(portfolio_name, self.event_engine)
             self.portfolios[portfolio_name] = portfolio
@@ -585,7 +585,7 @@ class OptionAlgoEngine:
     def process_order_event(self, event: Event) -> None:
         """"""
         order: OrderData = event.data
-        algo: ElectronicEyeAlgo = self.order_algo_map.get(order.vt_orderid, None)
+        algo: Optional[ElectronicEyeAlgo] = self.order_algo_map.get(order.vt_orderid, None)
 
         if algo:
             algo.on_order(order)
@@ -593,7 +593,7 @@ class OptionAlgoEngine:
     def process_trade_event(self, event: Event) -> None:
         """"""
         trade: TradeData = event.data
-        algo: ElectronicEyeAlgo = self.order_algo_map.get(trade.vt_orderid, None)
+        algo: Optional[ElectronicEyeAlgo] = self.order_algo_map.get(trade.vt_orderid, None)
 
         if algo:
             algo.on_trade(trade)
