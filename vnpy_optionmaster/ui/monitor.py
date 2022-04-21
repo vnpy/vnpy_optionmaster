@@ -15,9 +15,9 @@ from ..engine import OptionEngine
 from ..base import UnderlyingData, OptionData, ChainData, PortfolioData, InstrumentData
 
 
-COLOR_WHITE = QtGui.QColor("white")
-COLOR_POS = QtGui.QColor("yellow")
-COLOR_GREEKS = QtGui.QColor("cyan")
+COLOR_WHITE: QtGui.QColor = QtGui.QColor("white")
+COLOR_POS: QtGui.QColor = QtGui.QColor("yellow")
+COLOR_GREEKS: QtGui.QColor = QtGui.QColor("cyan")
 
 
 class MonitorCell(QtWidgets.QTableWidgetItem):
@@ -111,9 +111,9 @@ class MonitorTable(QtWidgets.QTableWidget):
 
 class OptionMarketMonitor(MonitorTable):
     """"""
-    signal_tick: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
-    signal_trade: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
-    signal_position: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
+    signal_tick = QtCore.pyqtSignal(Event)
+    signal_trade = QtCore.pyqtSignal(Event)
+    signal_position = QtCore.pyqtSignal(Event)
 
     headers: List[Dict] = [
         {"name": "symbol", "display": "代码", "cell": MonitorCell},
@@ -324,9 +324,9 @@ class OptionMarketMonitor(MonitorTable):
 
 class OptionGreeksMonitor(MonitorTable):
     """"""
-    signal_tick: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
-    signal_trade: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
-    signal_position: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
+    signal_tick = QtCore.pyqtSignal(Event)
+    signal_trade = QtCore.pyqtSignal(Event)
+    signal_position = QtCore.pyqtSignal(Event)
 
     headers: List[Dict] = [
         {"name": "long_pos", "display": "多仓", "cell": PosCell},
@@ -521,7 +521,7 @@ class OptionGreeksMonitor(MonitorTable):
 
 class OptionChainMonitor(MonitorTable):
     """"""
-    signal_timer: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
+    signal_timer = QtCore.pyqtSignal(Event)
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str):
         """"""
@@ -572,7 +572,7 @@ class OptionChainMonitor(MonitorTable):
             }
 
         # Additional table adjustment
-        horizontal_header: QtWidgets.QHeaderView = self.horizontalHeader()
+        horizontal_header = self.horizontalHeader()
         horizontal_header.setSectionResizeMode(horizontal_header.Stretch)
 
     def register_event(self) -> None:

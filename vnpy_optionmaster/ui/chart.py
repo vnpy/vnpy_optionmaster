@@ -2,7 +2,7 @@ from typing import Dict, List
 
 import pyqtgraph as pg
 
-from vnpy.trader.ui import QtWidgets, QtCore, QtGui
+from vnpy.trader.ui import QtWidgets, QtCore
 from vnpy.trader.event import EVENT_TIMER
 
 from ..base import PortfolioData, OptionData
@@ -25,7 +25,7 @@ mpl.rcParams['axes.unicode_minus'] = False
 
 class OptionVolatilityChart(QtWidgets.QWidget):
 
-    signal_timer: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
+    signal_timer = QtCore.pyqtSignal(Event)
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """"""
@@ -123,7 +123,7 @@ class OptionVolatilityChart(QtWidgets.QWidget):
         symbol_size: int = 14
         symbol: str = chain_symbol.split(".")[0]
         color: tuple = self.colors.pop(0)
-        pen: QtGui.QPen = pg.mkPen(color, width=2)
+        pen = pg.mkPen(color, width=2)
 
         self.call_curves[chain_symbol] = self.impv_chart.plot(
             symbolSize=symbol_size,
@@ -366,15 +366,15 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
 
         # Plot chart
         if target_name == "盈亏":
-            target_data: list = pnls
+            target_data = pnls
         elif target_name == "Delta":
-            target_data: list = deltas
+            target_data = deltas
         elif target_name == "Gamma":
-            target_data: list = gammas
+            target_data = gammas
         elif target_name == "Theta":
-            target_data: list = thetas
+            target_data = thetas
         else:
-            target_data: list = vegas
+            target_data = vegas
 
         self.update_chart(price_changes * 100, impv_changes * 100, target_data, target_name)
 

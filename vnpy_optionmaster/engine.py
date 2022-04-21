@@ -1,4 +1,6 @@
-from typing import Dict, List, Set, Optional
+""""""
+
+from typing import Dict, List, Set
 from copy import copy
 from collections import defaultdict
 
@@ -225,7 +227,7 @@ class OptionEngine(BaseEngine):
         """"""
         portfolio: PositionData = self.portfolios.get(portfolio_name, None)
         if not portfolio:
-            portfolio = PortfolioData(portfolio_name, self.event_engine)
+            portfolio: PortfolioData = PortfolioData(portfolio_name, self.event_engine)
             self.portfolios[portfolio_name] = portfolio
 
             event: Event = Event(EVENT_OPTION_NEW_PORTFOLIO, portfolio_name)
@@ -235,7 +237,7 @@ class OptionEngine(BaseEngine):
 
     def subscribe_data(self, vt_symbol: str) -> None:
         """"""
-        contract: Optional[ContractData] = self.main_engine.get_contract(vt_symbol)
+        contract: ContractData = self.main_engine.get_contract(vt_symbol)
         req: SubscribeRequest = SubscribeRequest(contract.symbol, contract.exchange)
         self.main_engine.subscribe(req, contract.gateway_name)
 
@@ -264,7 +266,7 @@ class OptionEngine(BaseEngine):
                     gateway_name=APP_NAME
                 )
             else:
-                contract: Optional[ContractData] = self.main_engine.get_contract(underlying_symbol)
+                contract: ContractData = self.main_engine.get_contract(underlying_symbol)
             portfolio.set_chain_underlying(chain_symbol, contract)
 
         portfolio.set_interest_rate(interest_rate)
@@ -337,7 +339,7 @@ class OptionEngine(BaseEngine):
         underlying_prefix: str = CHAIN_UNDERLYING_MAP[portfolio_name]
         underlying_symbols: list = []
 
-        contracts: List[ContractData] = self.main_engine.get_all_contracts()
+        contracts: ContractData = self.main_engine.get_all_contracts()
         for contract in contracts:
             if contract.product == Product.OPTION:
                 continue
@@ -459,8 +461,8 @@ class OptionHedgeEngine:
         hedge_volume = delta_to_hedge / instrument.cash_delta
 
         # Send hedge orders
-        tick: Optional[TickData] = self.main_engine.get_tick(self.vt_symbol)
-        contract: Optional[ContractData] = self.main_engine.get_contract(self.vt_symbol)
+        tick: TickData = self.main_engine.get_tick(self.vt_symbol)
+        contract: ContractData = self.main_engine.get_contract(self.vt_symbol)
         holding: PositionHolding = self.option_engine.get_position_holding(self.vt_symbol)
 
         # Check if hedge volume meets contract minimum trading volume
@@ -530,7 +532,7 @@ class OptionHedgeEngine:
     def cancel_all(self) -> None:
         """"""
         for vt_orderid in self.active_orderids:
-            order: Optional[OrderData] = self.main_engine.get_order(vt_orderid)
+            order: OrderData = self.main_engine.get_order(vt_orderid)
             req: CancelRequest = order.create_cancel_request()
             self.main_engine.cancel_order(req, order.gateway_name)
 
@@ -667,7 +669,7 @@ class OptionAlgoEngine:
         volume: int
     ) -> str:
         """"""
-        contract: Optional[ContractData] = self.main_engine.get_contract(vt_symbol)
+        contract: ContractData = self.main_engine.get_contract(vt_symbol)
 
         req: OrderRequest = OrderRequest(
             contract.symbol,
@@ -687,7 +689,7 @@ class OptionAlgoEngine:
 
     def cancel_order(self, vt_orderid: str) -> None:
         """"""
-        order: Optional[OrderData] = self.main_engine.get_order(vt_orderid)
+        order: OrderData = self.main_engine.get_order(vt_orderid)
         req: CancelRequest = order.create_cancel_request()
         self.main_engine.cancel_order(req, order.gateway_name)
 

@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict
 from pathlib import Path
 
 from vnpy.event import EventEngine, Event
@@ -21,7 +21,7 @@ from .manager import ElectronicEyeManager, PricingVolatilityManager
 
 class OptionManager(QtWidgets.QWidget):
     """"""
-    signal_new_portfolio: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
+    signal_new_portfolio = QtCore.pyqtSignal(Event)
 
     def __init__(self, main_engine: MainEngine, event_engine: EventEngine) -> None:
         """"""
@@ -82,7 +82,7 @@ class OptionManager(QtWidgets.QWidget):
         ]:
             button.setEnabled(False)
 
-        hbox: QtWidgets.QHBoxLayout = QtWidgets.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         hbox.addWidget(QtWidgets.QLabel("期权产品"))
         hbox.addWidget(self.portfolio_combo)
         hbox.addWidget(self.portfolio_button)
@@ -115,19 +115,19 @@ class OptionManager(QtWidgets.QWidget):
             return
 
         self.portfolio_combo.clear()
-        portfolio_names: list = self.option_engine.get_portfolio_names()
+        portfolio_names = self.option_engine.get_portfolio_names()
         self.portfolio_combo.addItems(portfolio_names)
 
     def open_portfolio_dialog(self) -> None:
         """"""
-        portfolio_name: str = self.portfolio_combo.currentText()
+        portfolio_name = self.portfolio_combo.currentText()
         if not portfolio_name:
             return
 
         self.portfolio_name = portfolio_name
 
-        dialog: PortfolioDialog = PortfolioDialog(self.option_engine, portfolio_name)
-        result: int = dialog.exec_()
+        dialog = PortfolioDialog(self.option_engine, portfolio_name)
+        result = dialog.exec_()
 
         if result == dialog.Accepted:
             self.portfolio_combo.setEnabled(False)
@@ -199,8 +199,8 @@ class PortfolioDialog(QtWidgets.QDialog):
         """"""
         super().__init__()
 
-        self.option_engine: OptionEngine = option_engine
-        self.portfolio_name: str = portfolio_name
+        self.option_engine = option_engine
+        self.portfolio_name = portfolio_name
 
         self.init_ui()
 
@@ -208,11 +208,11 @@ class PortfolioDialog(QtWidgets.QDialog):
         """"""
         self.setWindowTitle(f"{self.portfolio_name}组合配置")
 
-        portfolio_setting: dict = self.option_engine.get_portfolio_setting(
+        portfolio_setting = self.option_engine.get_portfolio_setting(
             self.portfolio_name
         )
 
-        form: QtWidgets.QFormLayout = QtWidgets.QFormLayout()
+        form = QtWidgets.QFormLayout()
 
         # Model Combo
         self.model_name_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
@@ -227,7 +227,7 @@ class PortfolioDialog(QtWidgets.QDialog):
         form.addRow("定价模型", self.model_name_combo)
 
         # Interest rate spin
-        self.interest_rate_spin: QtWidgets.QDoubleSpinBox = QtWidgets.QDoubleSpinBox()
+        self.interest_rate_spin = QtWidgets.QDoubleSpinBox()
         self.interest_rate_spin.setMinimum(0)
         self.interest_rate_spin.setMaximum(20)
         self.interest_rate_spin.setDecimals(1)
@@ -334,7 +334,7 @@ class PortfolioDialog(QtWidgets.QDialog):
 
 class OptionManualTrader(QtWidgets.QWidget):
     """"""
-    signal_tick: QtCore.pyqtSignal = QtCore.pyqtSignal(TickData)
+    signal_tick = QtCore.pyqtSignal(TickData)
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """"""
@@ -403,42 +403,42 @@ class OptionManualTrader(QtWidgets.QWidget):
         bid_color: str = "rgb(255,174,201)"
         ask_color: str = "rgb(160,255,160)"
 
-        self.bp1_label: QtWidgets.QLabel = self.create_label(bid_color)
-        self.bp2_label: QtWidgets.QLabel = self.create_label(bid_color)
-        self.bp3_label: QtWidgets.QLabel = self.create_label(bid_color)
-        self.bp4_label: QtWidgets.QLabel = self.create_label(bid_color)
-        self.bp5_label: QtWidgets.QLabel = self.create_label(bid_color)
+        self.bp1_label = self.create_label(bid_color)
+        self.bp2_label = self.create_label(bid_color)
+        self.bp3_label = self.create_label(bid_color)
+        self.bp4_label = self.create_label(bid_color)
+        self.bp5_label = self.create_label(bid_color)
 
-        self.bv1_label: QtWidgets.QLabel = self.create_label(
+        self.bv1_label = self.create_label(
             bid_color, alignment=QtCore.Qt.AlignRight)
-        self.bv2_label: QtWidgets.QLabel = self.create_label(
+        self.bv2_label = self.create_label(
             bid_color, alignment=QtCore.Qt.AlignRight)
-        self.bv3_label: QtWidgets.QLabel = self.create_label(
+        self.bv3_label = self.create_label(
             bid_color, alignment=QtCore.Qt.AlignRight)
-        self.bv4_label: QtWidgets.QLabel = self.create_label(
+        self.bv4_label = self.create_label(
             bid_color, alignment=QtCore.Qt.AlignRight)
-        self.bv5_label: QtWidgets.QLabel = self.create_label(
+        self.bv5_label = self.create_label(
             bid_color, alignment=QtCore.Qt.AlignRight)
 
-        self.ap1_label: QtWidgets.QLabel = self.create_label(ask_color)
-        self.ap2_label: QtWidgets.QLabel = self.create_label(ask_color)
-        self.ap3_label: QtWidgets.QLabel = self.create_label(ask_color)
-        self.ap4_label: QtWidgets.QLabel = self.create_label(ask_color)
-        self.ap5_label: QtWidgets.QLabel = self.create_label(ask_color)
+        self.ap1_label = self.create_label(ask_color)
+        self.ap2_label = self.create_label(ask_color)
+        self.ap3_label = self.create_label(ask_color)
+        self.ap4_label = self.create_label(ask_color)
+        self.ap5_label = self.create_label(ask_color)
 
-        self.av1_label: QtWidgets.QLabel = self.create_label(
+        self.av1_label = self.create_label(
             ask_color, alignment=QtCore.Qt.AlignRight)
-        self.av2_label: QtWidgets.QLabel = self.create_label(
+        self.av2_label = self.create_label(
             ask_color, alignment=QtCore.Qt.AlignRight)
-        self.av3_label: QtWidgets.QLabel = self.create_label(
+        self.av3_label = self.create_label(
             ask_color, alignment=QtCore.Qt.AlignRight)
-        self.av4_label: QtWidgets.QLabel = self.create_label(
+        self.av4_label = self.create_label(
             ask_color, alignment=QtCore.Qt.AlignRight)
-        self.av5_label: QtWidgets.QLabel = self.create_label(
+        self.av5_label = self.create_label(
             ask_color, alignment=QtCore.Qt.AlignRight)
 
-        self.lp_label: QtWidgets.QLabel = self.create_label()
-        self.return_label: QtWidgets.QLabel = self.create_label(alignment=QtCore.Qt.AlignRight)
+        self.lp_label = self.create_label()
+        self.return_label = self.create_label(alignment=QtCore.Qt.AlignRight)
 
         min_width: int = 70
         self.lp_label.setMinimumWidth(min_width)
@@ -465,7 +465,7 @@ class OptionManualTrader(QtWidgets.QWidget):
 
     def init_contracts(self) -> None:
         """"""
-        contracts: List[ContractData] = self.main_engine.get_all_contracts()
+        contracts: ContractData = self.main_engine.get_all_contracts()
         for contract in contracts:
             self.contracts[contract.symbol] = contract
 
@@ -537,7 +537,7 @@ class OptionManualTrader(QtWidgets.QWidget):
         self.vt_symbol = vt_symbol
         self.price_digits = get_digits(contract.pricetick)
 
-        tick: Optional[TickData] = self.main_engine.get_tick(vt_symbol)
+        tick: TickData = self.main_engine.get_tick(vt_symbol)
         if tick:
             self.update_tick(tick)
 
@@ -551,7 +551,7 @@ class OptionManualTrader(QtWidgets.QWidget):
         """
         Create label with certain font color.
         """
-        label: QtWidgets.QLabel = QtWidgets.QLabel("-")
+        label = QtWidgets.QLabel("-")
         if color:
             label.setStyleSheet(f"color:{color}")
         label.setAlignment(alignment)
@@ -746,7 +746,7 @@ class OptionHedgeWidget(QtWidgets.QWidget):
 class OptionRiskWidget(QtWidgets.QWidget):
     """期权风险监控组件"""
 
-    signal: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
+    signal = QtCore.pyqtSignal(Event)
 
     def __init__(self, option_engine: OptionEngine) -> None:
         """"""
