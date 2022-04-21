@@ -2,15 +2,15 @@ from typing import Dict
 from pathlib import Path
 
 from vnpy.event import EventEngine, Event
-from vnpy.trader.engine import MainEngine, BaseEngine
+from vnpy.trader.engine import MainEngine
 from vnpy.trader.ui import QtWidgets, QtCore, QtGui
 from vnpy.trader.constant import Direction, Offset, OrderType
-from vnpy.trader.object import OrderRequest, CancelRequest, ContractData, TickData
+from vnpy.trader.object import OrderRequest, ContractData, TickData
 from vnpy.trader.event import EVENT_TICK
 from vnpy.trader.utility import get_digits
 
-from ..base import APP_NAME, EVENT_OPTION_NEW_PORTFOLIO, EVENT_OPTION_RISK_NOTICE, PortfolioData, InstrumentData
-from ..engine import OptionEngine, OptionHedgeEngine, PRICING_MODELS
+from ..base import APP_NAME, EVENT_OPTION_NEW_PORTFOLIO, EVENT_OPTION_RISK_NOTICE
+from ..engine import OptionEngine, PRICING_MODELS
 from .monitor import (
     OptionMarketMonitor, OptionGreeksMonitor, OptionChainMonitor,
     MonitorCell
@@ -23,13 +23,13 @@ class OptionManager(QtWidgets.QWidget):
     """"""
     signal_new_portfolio = QtCore.pyqtSignal(Event)
 
-    def __init__(self, main_engine: MainEngine, event_engine: EventEngine) -> None:
+    def __init__(self, main_engine: MainEngine, event_engine: EventEngine):
         """"""
         super().__init__()
 
-        self.main_engine: MainEngine = main_engine
-        self.event_engine: EventEngine = event_engine
-        self.option_engine: BaseEngine = main_engine.get_engine(APP_NAME)
+        self.main_engine = main_engine
+        self.event_engine = event_engine
+        self.option_engine = main_engine.get_engine(APP_NAME)
 
         self.portfolio_name: str = ""
 
@@ -50,7 +50,7 @@ class OptionManager(QtWidgets.QWidget):
         """"""
         self.setWindowTitle("OptionMaster")
 
-        self.portfolio_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
+        self.portfolio_combo = QtWidgets.QComboBox()
         self.portfolio_combo.setFixedWidth(150)
         self.update_portfolio_combo()
 
@@ -215,10 +215,10 @@ class PortfolioDialog(QtWidgets.QDialog):
         form = QtWidgets.QFormLayout()
 
         # Model Combo
-        self.model_name_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
+        self.model_name_combo = QtWidgets.QComboBox()
         self.model_name_combo.addItems(list(PRICING_MODELS.keys()))
 
-        model_name: str = portfolio_setting.get("model_name", "")
+        model_name = portfolio_setting.get("model_name", "")
         if model_name:
             self.model_name_combo.setCurrentIndex(
                 self.model_name_combo.findText(model_name)
@@ -233,16 +233,16 @@ class PortfolioDialog(QtWidgets.QDialog):
         self.interest_rate_spin.setDecimals(1)
         self.interest_rate_spin.setSuffix("%")
 
-        interest_rate: float = portfolio_setting.get("interest_rate", 0.02)
+        interest_rate = portfolio_setting.get("interest_rate", 0.02)
         self.interest_rate_spin.setValue(interest_rate * 100)
 
         form.addRow("年化利率", self.interest_rate_spin)
 
         # Inverse combo
-        self.inverse_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
+        self.inverse_combo = QtWidgets.QComboBox()
         self.inverse_combo.addItems(["正向", "反向"])
 
-        inverse: bool = portfolio_setting.get("inverse", False)
+        inverse = portfolio_setting.get("inverse", False)
         if inverse:
             self.inverse_combo.setCurrentIndex(1)
         else:
@@ -251,11 +251,11 @@ class PortfolioDialog(QtWidgets.QDialog):
         form.addRow("合约模式", self.inverse_combo)
 
         # Greeks decimals precision
-        self.precision_spin: QtWidgets.QSpinBox = QtWidgets.QSpinBox()
+        self.precision_spin = QtWidgets.QSpinBox()
         self.precision_spin.setMinimum(0)
         self.precision_spin.setMaximum(10)
 
-        precision: int = portfolio_setting.get("precision", 0)
+        precision = portfolio_setting.get("precision", 0)
         self.precision_spin.setValue(precision)
 
         form.addRow("Greeks小数位", self.precision_spin)
@@ -263,18 +263,18 @@ class PortfolioDialog(QtWidgets.QDialog):
         # Underlying for each chain
         self.combos: Dict[str, QtWidgets.QComboBox] = {}
 
-        portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
-        underlying_symbols: list = self.option_engine.get_underlying_symbols(
+        portfolio = self.option_engine.get_portfolio(self.portfolio_name)
+        underlying_symbols = self.option_engine.get_underlying_symbols(
             self.portfolio_name
         )
 
-        chain_symbols: list = list(portfolio._chains.keys())
+        chain_symbols = list(portfolio._chains.keys())
         chain_symbols.sort()
 
-        chain_underlying_map: dict = portfolio_setting.get("chain_underlying_map", {})
+        chain_underlying_map = portfolio_setting.get("chain_underlying_map", {})
 
         for chain_symbol in chain_symbols:
-            combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
+            combo = QtWidgets.QComboBox()
             combo.addItem("")
             combo.addItems(underlying_symbols)
 
@@ -282,7 +282,7 @@ class PortfolioDialog(QtWidgets.QDialog):
             synthetic_symbol = f"{symbol}.LOCAL"
             combo.addItem(synthetic_symbol)
 
-            underlying_symbol: str = chain_underlying_map.get(chain_symbol, "")
+            underlying_symbol = chain_underlying_map.get(chain_symbol, "")
             if underlying_symbol:
                 combo.setCurrentIndex(combo.findText(underlying_symbol))
 
@@ -290,7 +290,7 @@ class PortfolioDialog(QtWidgets.QDialog):
             self.combos[chain_symbol] = combo
 
         # Set layout
-        button: QtWidgets.QPushButton = QtWidgets.QPushButton("确定")
+        button = QtWidgets.QPushButton("确定")
         button.clicked.connect(self.update_portfolio_setting)
         form.addRow(button)
 
@@ -298,19 +298,19 @@ class PortfolioDialog(QtWidgets.QDialog):
 
     def update_portfolio_setting(self) -> None:
         """"""
-        model_name: str = self.model_name_combo.currentText()
-        interest_rate: float = self.interest_rate_spin.value() / 100
+        model_name = self.model_name_combo.currentText()
+        interest_rate = self.interest_rate_spin.value() / 100
 
         if self.inverse_combo.currentIndex() == 0:
-            inverse: bool = False
+            inverse = False
         else:
-            inverse: bool = True
+            inverse = True
 
-        precision: int = self.precision_spin.value()
+        precision = self.precision_spin.value()
 
-        chain_underlying_map: dict = {}
+        chain_underlying_map = {}
         for chain_symbol, combo in self.combos.items():
-            underlying_symbol: str = combo.currentText()
+            underlying_symbol = combo.currentText()
 
             if underlying_symbol:
                 chain_underlying_map[chain_symbol] = underlying_symbol
@@ -324,7 +324,7 @@ class PortfolioDialog(QtWidgets.QDialog):
             precision
         )
 
-        result: bool = self.option_engine.init_portfolio(self.portfolio_name)
+        result = self.option_engine.init_portfolio(self.portfolio_name)
 
         if result:
             self.accept()
@@ -336,11 +336,11 @@ class OptionManualTrader(QtWidgets.QWidget):
     """"""
     signal_tick = QtCore.pyqtSignal(TickData)
 
-    def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
+    def __init__(self, option_engine: OptionEngine, portfolio_name: str):
         """"""
         super().__init__()
 
-        self.option_engine: OptionEngine = option_engine
+        self.option_engine = option_engine
         self.main_engine: MainEngine = option_engine.main_engine
         self.event_engine: EventEngine = option_engine.event_engine
 
@@ -357,40 +357,40 @@ class OptionManualTrader(QtWidgets.QWidget):
         self.setWindowTitle("期权交易")
 
         # Trading Area
-        self.symbol_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit()
+        self.symbol_line = QtWidgets.QLineEdit()
         self.symbol_line.returnPressed.connect(self._update_symbol)
 
-        float_validator: QtGui.QDoubleValidator = QtGui.QDoubleValidator()
+        float_validator = QtGui.QDoubleValidator()
         float_validator.setBottom(0)
 
-        self.price_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit()
+        self.price_line = QtWidgets.QLineEdit()
         self.price_line.setValidator(float_validator)
 
-        int_validator: QtGui.QIntValidator = QtGui.QIntValidator()
+        int_validator = QtGui.QIntValidator()
         int_validator.setBottom(0)
 
-        self.volume_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit()
+        self.volume_line = QtWidgets.QLineEdit()
         self.volume_line.setValidator(int_validator)
 
-        self.direction_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
+        self.direction_combo = QtWidgets.QComboBox()
         self.direction_combo.addItems([
             Direction.LONG.value,
             Direction.SHORT.value
         ])
 
-        self.offset_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
+        self.offset_combo = QtWidgets.QComboBox()
         self.offset_combo.addItems([
             Offset.OPEN.value,
             Offset.CLOSE.value
         ])
 
-        order_button: QtWidgets.QPushButton = QtWidgets.QPushButton("委托")
+        order_button = QtWidgets.QPushButton("委托")
         order_button.clicked.connect(self.send_order)
 
-        cancel_button: QtWidgets.QPushButton = QtWidgets.QPushButton("全撤")
+        cancel_button = QtWidgets.QPushButton("全撤")
         cancel_button.clicked.connect(self.cancel_all)
 
-        form1: QtWidgets.QFormLayout = QtWidgets.QFormLayout()
+        form1 = QtWidgets.QFormLayout()
         form1.addRow("代码", self.symbol_line)
         form1.addRow("方向", self.direction_combo)
         form1.addRow("开平", self.offset_combo)
@@ -400,8 +400,8 @@ class OptionManualTrader(QtWidgets.QWidget):
         form1.addRow(cancel_button)
 
         # Depth Area
-        bid_color: str = "rgb(255,174,201)"
-        ask_color: str = "rgb(160,255,160)"
+        bid_color = "rgb(255,174,201)"
+        ask_color = "rgb(160,255,160)"
 
         self.bp1_label = self.create_label(bid_color)
         self.bp2_label = self.create_label(bid_color)
@@ -440,11 +440,11 @@ class OptionManualTrader(QtWidgets.QWidget):
         self.lp_label = self.create_label()
         self.return_label = self.create_label(alignment=QtCore.Qt.AlignRight)
 
-        min_width: int = 70
+        min_width = 70
         self.lp_label.setMinimumWidth(min_width)
         self.return_label.setMinimumWidth(min_width)
 
-        form2: QtWidgets.QFormLayout = QtWidgets.QFormLayout()
+        form2 = QtWidgets.QFormLayout()
         form2.addRow(self.ap5_label, self.av5_label)
         form2.addRow(self.ap4_label, self.av4_label)
         form2.addRow(self.ap3_label, self.av3_label)
@@ -458,14 +458,14 @@ class OptionManualTrader(QtWidgets.QWidget):
         form2.addRow(self.bp5_label, self.bv5_label)
 
         # Set layout
-        hbox: QtWidgets.QHBoxLayout = QtWidgets.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         hbox.addLayout(form1)
         hbox.addLayout(form2)
         self.setLayout(hbox)
 
     def init_contracts(self) -> None:
         """"""
-        contracts: ContractData = self.main_engine.get_all_contracts()
+        contracts = self.main_engine.get_all_contracts()
         for contract in contracts:
             self.contracts[contract.symbol] = contract
 
@@ -475,23 +475,23 @@ class OptionManualTrader(QtWidgets.QWidget):
 
     def send_order(self) -> None:
         """"""
-        symbol: str = self.symbol_line.text()
-        contract: ContractData = self.contracts.get(symbol, None)
+        symbol = self.symbol_line.text()
+        contract = self.contracts.get(symbol, None)
         if not contract:
             return
 
-        price_text: str = self.price_line.text()
-        volume_text: str = self.volume_line.text()
+        price_text = self.price_line.text()
+        volume_text = self.volume_line.text()
 
         if not price_text or not volume_text:
             return
 
-        price: float = float(price_text)
-        volume: int = int(volume_text)
-        direction: Direction = Direction(self.direction_combo.currentText())
-        offset: Offset = Offset(self.offset_combo.currentText())
+        price = float(price_text)
+        volume = int(volume_text)
+        direction = Direction(self.direction_combo.currentText())
+        offset = Offset(self.offset_combo.currentText())
 
-        req: OrderRequest = OrderRequest(
+        req = OrderRequest(
             symbol=contract.symbol,
             exchange=contract.exchange,
             direction=direction,
@@ -505,7 +505,7 @@ class OptionManualTrader(QtWidgets.QWidget):
     def cancel_all(self) -> None:
         """"""
         for order in self.main_engine.get_all_active_orders():
-            req: CancelRequest = order.create_cancel_request()
+            req = order.create_cancel_request()
             self.main_engine.cancel_order(req, order.gateway_name)
 
     def update_symbol(self, cell: MonitorCell) -> None:
@@ -513,14 +513,14 @@ class OptionManualTrader(QtWidgets.QWidget):
         if not cell.vt_symbol:
             return
 
-        symbol: str = cell.vt_symbol.split(".")[0]
+        symbol = cell.vt_symbol.split(".")[0]
         self.symbol_line.setText(symbol)
         self._update_symbol()
 
     def _update_symbol(self) -> None:
         """"""
-        symbol: str = self.symbol_line.text()
-        contract: ContractData = self.contracts.get(symbol, None)
+        symbol = self.symbol_line.text()
+        contract = self.contracts.get(symbol, None)
 
         if contract and contract.vt_symbol == self.vt_symbol:
             return
@@ -533,11 +533,11 @@ class OptionManualTrader(QtWidgets.QWidget):
         if not contract:
             return
 
-        vt_symbol: str = contract.vt_symbol
+        vt_symbol = contract.vt_symbol
         self.vt_symbol = vt_symbol
         self.price_digits = get_digits(contract.pricetick)
 
-        tick: TickData = self.main_engine.get_tick(vt_symbol)
+        tick = self.main_engine.get_tick(vt_symbol)
         if tick:
             self.update_tick(tick)
 
@@ -559,14 +559,14 @@ class OptionManualTrader(QtWidgets.QWidget):
 
     def process_tick_event(self, event: Event) -> None:
         """"""
-        tick: TickData = event.data
+        tick = event.data
         if tick.vt_symbol != self.vt_symbol:
             return
         self.signal_tick.emit(tick)
 
     def update_tick(self, tick: TickData) -> None:
         """"""
-        price_digits: int = self.price_digits
+        price_digits = self.price_digits
 
         self.lp_label.setText(f"{tick.last_price:.{price_digits}f}")
         self.bp1_label.setText(f"{tick.bid_price_1:.{price_digits}f}")
@@ -575,7 +575,7 @@ class OptionManualTrader(QtWidgets.QWidget):
         self.av1_label.setText(str(tick.ask_volume_1))
 
         if tick.pre_close:
-            r: float = (tick.last_price / tick.pre_close - 1) * 100
+            r = (tick.last_price / tick.pre_close - 1) * 100
             self.return_label.setText(f"{r:.2f}%")
 
         if tick.bid_price_2:
@@ -632,13 +632,13 @@ class OptionManualTrader(QtWidgets.QWidget):
 class OptionHedgeWidget(QtWidgets.QWidget):
     """"""
 
-    def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
+    def __init__(self, option_engine: OptionEngine, portfolio_name: str):
         """"""
         super().__init__()
 
-        self.option_engine: OptionEngine = option_engine
-        self.portfolio_name: str = portfolio_name
-        self.hedge_engine: OptionHedgeEngine = option_engine.hedge_engine
+        self.option_engine = option_engine
+        self.portfolio_name = portfolio_name
+        self.hedge_engine = option_engine.hedge_engine
 
         self.symbol_map: Dict[str, str] = {}
 
@@ -648,40 +648,40 @@ class OptionHedgeWidget(QtWidgets.QWidget):
         """"""
         self.setWindowTitle("Delta对冲")
 
-        portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
-        underlying_symbols: list = [vs for vs in portfolio.underlyings.keys() if "LOCAL" not in vs]
+        portfolio = self.option_engine.get_portfolio(self.portfolio_name)
+        underlying_symbols = [vs for vs in portfolio.underlyings.keys() if "LOCAL" not in vs]
         underlying_symbols.sort()
 
-        self.symbol_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
+        self.symbol_combo = QtWidgets.QComboBox()
         self.symbol_combo.addItems(underlying_symbols)
 
-        self.trigger_spin: QtWidgets.QSpinBox = QtWidgets.QSpinBox()
+        self.trigger_spin = QtWidgets.QSpinBox()
         self.trigger_spin.setSuffix("秒")
         self.trigger_spin.setMinimum(1)
         self.trigger_spin.setValue(5)
 
-        self.target_spin: QtWidgets.QSpinBox = QtWidgets.QSpinBox()
+        self.target_spin = QtWidgets.QSpinBox()
         self.target_spin.setMaximum(99999999)
         self.target_spin.setMinimum(-99999999)
         self.target_spin.setValue(0)
 
-        self.range_spin: QtWidgets.QSpinBox = QtWidgets.QSpinBox()
+        self.range_spin = QtWidgets.QSpinBox()
         self.range_spin.setMinimum(0)
         self.range_spin.setMaximum(9999999)
         self.range_spin.setValue(12000)
 
-        self.payup_spin: QtWidgets.QSpinBox = QtWidgets.QSpinBox()
+        self.payup_spin = QtWidgets.QSpinBox()
         self.payup_spin.setMinimum(0)
         self.payup_spin.setValue(3)
 
-        self.start_button: QtWidgets.QPushButton = QtWidgets.QPushButton("启动")
+        self.start_button = QtWidgets.QPushButton("启动")
         self.start_button.clicked.connect(self.start)
 
-        self.stop_button: QtWidgets.QPushButton = QtWidgets.QPushButton("停止")
+        self.stop_button = QtWidgets.QPushButton("停止")
         self.stop_button.clicked.connect(self.stop)
         self.stop_button.setEnabled(False)
 
-        form: QtWidgets.QFormLayout = QtWidgets.QFormLayout()
+        form = QtWidgets.QFormLayout()
         form.addRow("对冲合约", self.symbol_combo)
         form.addRow("执行频率", self.trigger_spin)
         form.addRow("Delta目标", self.target_spin)
@@ -694,17 +694,17 @@ class OptionHedgeWidget(QtWidgets.QWidget):
 
     def start(self) -> None:
         """"""
-        vt_symbol: str = self.symbol_combo.currentText()
-        timer_trigger: int = self.trigger_spin.value()
-        delta_target: int = self.target_spin.value()
-        delta_range: int = self.range_spin.value()
-        hedge_payup: int = self.payup_spin.value()
+        vt_symbol = self.symbol_combo.currentText()
+        timer_trigger = self.trigger_spin.value()
+        delta_target = self.target_spin.value()
+        delta_range = self.range_spin.value()
+        hedge_payup = self.payup_spin.value()
 
         # Check delta of underlying
-        underlying: InstrumentData = self.option_engine.get_instrument(vt_symbol)
-        min_range: int = int(underlying.cash_delta * 0.6)
+        underlying = self.option_engine.get_instrument(vt_symbol)
+        min_range = int(underlying.cash_delta * 0.6)
         if delta_range < min_range:
-            msg: str = f"Delta对冲阈值({delta_range})低于对冲合约"\
+            msg = f"Delta对冲阈值({delta_range})低于对冲合约"\
                 f"Delta值的60%({min_range})，可能导致来回频繁对冲！"
 
             QtWidgets.QMessageBox.warning(
@@ -748,7 +748,7 @@ class OptionRiskWidget(QtWidgets.QWidget):
 
     signal = QtCore.pyqtSignal(Event)
 
-    def __init__(self, option_engine: OptionEngine) -> None:
+    def __init__(self, option_engine: OptionEngine):
         """"""
         super().__init__()
 
@@ -767,26 +767,26 @@ class OptionRiskWidget(QtWidgets.QWidget):
         self.setWindowTitle("风险监控")
         self.resize(400, 200)
 
-        self.trade_volume_label: QtWidgets.QLabel = QtWidgets.QLabel("0")
-        self.net_pos_label: QtWidgets.QLabel = QtWidgets.QLabel("0")
-        self.order_count_label: QtWidgets.QLabel = QtWidgets.QLabel("0")
-        self.cancel_count_label: QtWidgets.QLabel = QtWidgets.QLabel("0")
-        self.trade_position_ratio_label: QtWidgets.QLabel = QtWidgets.QLabel("0")
-        self.cancel_order_ratio_label: QtWidgets.QLabel = QtWidgets.QLabel("0")
+        self.trade_volume_label = QtWidgets.QLabel("0")
+        self.net_pos_label = QtWidgets.QLabel("0")
+        self.order_count_label = QtWidgets.QLabel("0")
+        self.cancel_count_label = QtWidgets.QLabel("0")
+        self.trade_position_ratio_label = QtWidgets.QLabel("0")
+        self.cancel_order_ratio_label = QtWidgets.QLabel("0")
 
-        self.trade_position_limit_spin: QtWidgets.QDoubleSpinBox = QtWidgets.QDoubleSpinBox()
+        self.trade_position_limit_spin = QtWidgets.QDoubleSpinBox()
         self.trade_position_limit_spin.setDecimals(1)
         self.trade_position_limit_spin.setRange(0, 100000)
         self.trade_position_limit_spin.setValue(self.trade_position_limit)
         self.trade_position_limit_spin.valueChanged.connect(self.set_trade_position_limit)
 
-        self.cancel_order_ratio_spin: QtWidgets.QDoubleSpinBox = QtWidgets.QDoubleSpinBox()
+        self.cancel_order_ratio_spin = QtWidgets.QDoubleSpinBox()
         self.cancel_order_ratio_spin.setDecimals(1)
         self.cancel_order_ratio_spin.setRange(0, 1)
         self.cancel_order_ratio_spin.setValue(self.cancel_order_limit)
         self.cancel_order_ratio_spin.valueChanged.connect(self.set_cancel_order_limit)
 
-        form: QtWidgets.QFormLayout = QtWidgets.QFormLayout()
+        form = QtWidgets.QFormLayout()
         form.addRow("成交持仓限制", self.trade_position_limit_spin)
         form.addRow("撤单委托限制", self.cancel_order_ratio_spin)
         form.addRow(QtWidgets.QLabel(" "))
@@ -799,8 +799,8 @@ class OptionRiskWidget(QtWidgets.QWidget):
 
         self.setLayout(form)
 
-        icon_path: Path = Path(__file__).parent.joinpath("option.ico")
-        icon: QtGui.QIcon = QtGui.QIcon(str(icon_path))
+        icon_path = Path(__file__).parent.joinpath("option.ico")
+        icon = QtGui.QIcon(str(icon_path))
         self.tray_icon = QtWidgets.QSystemTrayIcon()
         self.tray_icon.setIcon(icon)
         self.tray_icon.setVisible(True)
@@ -820,7 +820,7 @@ class OptionRiskWidget(QtWidgets.QWidget):
         self.trade_position_ratio_label.setText(f'{data["trade_position_ratio"]:.2f}')
         self.cancel_order_ratio_label.setText(f'{data["cancel_order_ratio"]:.2f}')
 
-        texts: list = []
+        texts = []
         if data["trade_position_ratio"] >= self.trade_position_limit:
             ratio = data["trade_position_ratio"]
             texts.append(f"当前交易持仓比{ratio}超过限制{self.trade_position_limit}！")
@@ -830,7 +830,7 @@ class OptionRiskWidget(QtWidgets.QWidget):
             texts.append(f"当前撤单委托比{ratio}超过限制{self.cancel_order_limit}！")
 
         if texts:
-            msg: str = "\n\n".join(texts)
+            msg = "\n\n".join(texts)
             self.show_warning(msg)
 
     def set_cancel_order_limit(self, limit: float) -> None:

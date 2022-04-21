@@ -6,8 +6,8 @@ from collections import defaultdict
 
 from vnpy.trader.object import (
     LogData, ContractData, TickData,
-    OrderData, TradeData, PositionData,
-    SubscribeRequest, OrderRequest, CancelRequest
+    OrderData, TradeData,
+    SubscribeRequest, OrderRequest
 )
 from vnpy.event import Event, EventEngine
 from vnpy.trader.engine import BaseEngine, MainEngine
@@ -18,7 +18,7 @@ from vnpy.trader.event import (
 from vnpy.trader.constant import (
     Product, Offset, Direction, OrderType, Exchange, Status
 )
-from vnpy.trader.converter import OffsetConverter, PositionHolding
+from vnpy.trader.converter import OffsetConverter
 from vnpy.trader.utility import extract_vt_symbol, round_to, save_json, load_json
 
 from .base import (
@@ -27,7 +27,7 @@ from .base import (
     EVENT_OPTION_ALGO_PRICING, EVENT_OPTION_ALGO_TRADING,
     EVENT_OPTION_ALGO_STATUS, EVENT_OPTION_ALGO_LOG,
     EVENT_OPTION_RISK_NOTICE,
-    InstrumentData, PortfolioData, OptionData
+    InstrumentData, PortfolioData
 )
 try:
     from .pricing import black_76_cython as black_76
@@ -41,7 +41,7 @@ except ImportError:
 from .algo import ElectronicEyeAlgo
 
 
-PRICING_MODELS: dict = {
+PRICING_MODELS = {
     "Black-76 欧式期货期权": black_76,
     "Black-Scholes 欧式股票期权": black_scholes,
     "二叉树 美式期货期权": binomial_tree
@@ -51,10 +51,10 @@ PRICING_MODELS: dict = {
 class OptionEngine(BaseEngine):
     """"""
 
-    setting_filename: str = "option_master_setting.json"
-    data_filename: str = "option_master_data.json"
+    setting_filename = "option_master_setting.json"
+    data_filename = "option_master_data.json"
 
-    def __init__(self, main_engine: MainEngine, event_engine: EventEngine) -> None:
+    def __init__(self, main_engine: MainEngine, event_engine: EventEngine):
         """"""
         super().__init__(main_engine, event_engine, APP_NAME)
 
@@ -72,7 +72,7 @@ class OptionEngine(BaseEngine):
         self.algo_engine: OptionAlgoEngine = OptionAlgoEngine(self)
         self.risk_engine: OptionRiskEngine = OptionRiskEngine(self)
 
-        self.setting: dict = {}
+        self.setting: Dict = {}
 
         self.load_setting()
         self.register_event()
@@ -94,14 +94,14 @@ class OptionEngine(BaseEngine):
 
     def load_data(self) -> None:
         """"""
-        data: dict = load_json(self.data_filename)
+        data = load_json(self.data_filename)
 
         for portfolio in self.active_portfolios.values():
-            portfolio_name: str = portfolio.name
+            portfolio_name = portfolio.name
 
             # Load underlying adjustment from setting
-            chain_adjustments: dict = data.get("chain_adjustments", {})
-            chain_adjustment_data: dict = chain_adjustments.get(portfolio_name, {})
+            chain_adjustments = data.get("chain_adjustments", {})
+            chain_adjustment_data = chain_adjustments.get(portfolio_name, {})
 
             if chain_adjustment_data:
                 for chain in portfolio.chains.values():
@@ -111,41 +111,41 @@ class OptionEngine(BaseEngine):
                         )
 
             # Load pricing impv from setting
-            pricing_impvs: dict = data.get("pricing_impvs", {})
-            pricing_impv_data: dict = pricing_impvs.get(portfolio_name, {})
+            pricing_impvs = data.get("pricing_impvs", {})
+            pricing_impv_data = pricing_impvs.get(portfolio_name, {})
 
             if pricing_impv_data:
                 for chain in portfolio.chains.values():
                     for index in chain.indexes:
-                        key: str = f"{chain.chain_symbol}_{index}"
+                        key = f"{chain.chain_symbol}_{index}"
                         pricing_impv = pricing_impv_data.get(key, 0)
 
                         if pricing_impv:
-                            call: OptionData = chain.calls[index]
+                            call = chain.calls[index]
                             call.pricing_impv = pricing_impv
 
-                            put: OptionData = chain.puts[index]
+                            put = chain.puts[index]
                             put.pricing_impv = pricing_impv
 
     def save_data(self) -> None:
         """"""
-        chain_adjustments: dict = {}
-        pricing_impvs: dict = {}
+        chain_adjustments = {}
+        pricing_impvs = {}
 
         for portfolio in self.active_portfolios.values():
-            chain_adjustment_data: dict = {}
-            pricing_impv_data: dict = {}
+            chain_adjustment_data = {}
+            pricing_impv_data = {}
             for chain in portfolio.chains.values():
                 chain_adjustment_data[chain.chain_symbol] = chain.underlying_adjustment
 
                 for call in chain.calls.values():
-                    key: str = f"{chain.chain_symbol}_{call.chain_index}"
+                    key = f"{chain.chain_symbol}_{call.chain_index}"
                     pricing_impv_data[key] = call.pricing_impv
 
             chain_adjustments[portfolio.name] = chain_adjustment_data
             pricing_impvs[portfolio.name] = pricing_impv_data
 
-        data: dict = {
+        data = {
             "chain_adjustments": chain_adjustments,
             "pricing_impvs": pricing_impvs
         }
@@ -165,11 +165,11 @@ class OptionEngine(BaseEngine):
         """"""
         tick: TickData = event.data
 
-        instrument: InstrumentData = self.instruments.get(tick.vt_symbol, None)
+        instrument = self.instruments.get(tick.vt_symbol, None)
         if not instrument:
             return
 
-        portfolio: PortfolioData = instrument.portfolio
+        portfolio = instrument.portfolio
         if not portfolio:
             return
 
@@ -185,11 +185,11 @@ class OptionEngine(BaseEngine):
         trade: TradeData = event.data
         self.offset_converter.update_trade(trade)
 
-        instrument: InstrumentData = self.instruments.get(trade.vt_symbol, None)
+        instrument = self.instruments.get(trade.vt_symbol, None)
         if not instrument:
             return
 
-        portfolio: PortfolioData = instrument.portfolio
+        portfolio = instrument.portfolio
         if not portfolio:
             return
 
@@ -200,17 +200,17 @@ class OptionEngine(BaseEngine):
         contract: ContractData = event.data
 
         if contract.product == Product.OPTION:
-            exchange_name: str = contract.exchange.value
-            portfolio_name: str = f"{contract.option_portfolio}.{exchange_name}"
+            exchange_name = contract.exchange.value
+            portfolio_name = f"{contract.option_portfolio}.{exchange_name}"
             if portfolio_name not in CHAIN_UNDERLYING_MAP:
                 return
 
-            portfolio: PortfolioData = self.get_portfolio(portfolio_name)
+            portfolio = self.get_portfolio(portfolio_name)
             portfolio.add_option(contract)
 
     def process_position_event(self, event: Event) -> None:
         """"""
-        position: PositionData = event.data
+        position = event.data
         self.offset_converter.update_position(position)
 
     def process_timer_event(self, event: Event) -> None:
@@ -225,20 +225,20 @@ class OptionEngine(BaseEngine):
 
     def get_portfolio(self, portfolio_name: str) -> PortfolioData:
         """"""
-        portfolio: PositionData = self.portfolios.get(portfolio_name, None)
+        portfolio = self.portfolios.get(portfolio_name, None)
         if not portfolio:
-            portfolio: PortfolioData = PortfolioData(portfolio_name, self.event_engine)
+            portfolio = PortfolioData(portfolio_name, self.event_engine)
             self.portfolios[portfolio_name] = portfolio
 
-            event: Event = Event(EVENT_OPTION_NEW_PORTFOLIO, portfolio_name)
+            event = Event(EVENT_OPTION_NEW_PORTFOLIO, portfolio_name)
             self.event_engine.put(event)
 
         return portfolio
 
     def subscribe_data(self, vt_symbol: str) -> None:
         """"""
-        contract: ContractData = self.main_engine.get_contract(vt_symbol)
-        req: SubscribeRequest = SubscribeRequest(contract.symbol, contract.exchange)
+        contract = self.main_engine.get_contract(vt_symbol)
+        req = SubscribeRequest(contract.symbol, contract.exchange)
         self.main_engine.subscribe(req, contract.gateway_name)
 
     def update_portfolio_setting(
@@ -251,12 +251,12 @@ class OptionEngine(BaseEngine):
         precision: int = 0
     ) -> None:
         """"""
-        portfolio: PortfolioData = self.get_portfolio(portfolio_name)
+        portfolio = self.get_portfolio(portfolio_name)
 
         for chain_symbol, underlying_symbol in chain_underlying_map.items():
             if "LOCAL" in underlying_symbol:
                 symbol, exchange = extract_vt_symbol(underlying_symbol)
-                contract: ContractData = ContractData(
+                contract = ContractData(
                     symbol=symbol,
                     exchange=exchange,
                     name="",
@@ -266,7 +266,7 @@ class OptionEngine(BaseEngine):
                     gateway_name=APP_NAME
                 )
             else:
-                contract: ContractData = self.main_engine.get_contract(underlying_symbol)
+                contract = self.main_engine.get_contract(underlying_symbol)
             portfolio.set_chain_underlying(chain_symbol, contract)
 
         portfolio.set_interest_rate(interest_rate)
@@ -276,7 +276,7 @@ class OptionEngine(BaseEngine):
         portfolio.set_inverse(inverse)
         portfolio.set_precision(precision)
 
-        portfolio_settings: dict = self.setting.setdefault("portfolio_settings", {})
+        portfolio_settings = self.setting.setdefault("portfolio_settings", {})
         portfolio_settings[portfolio_name] = {
             "model_name": model_name,
             "interest_rate": interest_rate,
@@ -288,7 +288,7 @@ class OptionEngine(BaseEngine):
 
     def get_portfolio_setting(self, portfolio_name: str) -> Dict:
         """"""
-        portfolio_settings: dict = self.setting.setdefault("portfolio_settings", {})
+        portfolio_settings = self.setting.setdefault("portfolio_settings", {})
         return portfolio_settings.get(portfolio_name, {})
 
     def init_portfolio(self, portfolio_name: str) -> bool:
@@ -296,7 +296,7 @@ class OptionEngine(BaseEngine):
         # Add to active dict
         if portfolio_name in self.active_portfolios:
             return False
-        portfolio: PortfolioData = self.get_portfolio(portfolio_name)
+        portfolio = self.get_portfolio(portfolio_name)
         self.active_portfolios[portfolio_name] = portfolio
 
         # Subscribe market data
@@ -317,7 +317,7 @@ class OptionEngine(BaseEngine):
 
         # Update position volume
         for instrument in self.instruments.values():
-            holding: PositionHolding = self.offset_converter.get_position_holding(
+            holding = self.offset_converter.get_position_holding(
                 instrument.vt_symbol
             )
             if holding:
@@ -336,10 +336,10 @@ class OptionEngine(BaseEngine):
 
     def get_underlying_symbols(self, portfolio_name: str) -> List[str]:
         """"""
-        underlying_prefix: str = CHAIN_UNDERLYING_MAP[portfolio_name]
-        underlying_symbols: list = []
+        underlying_prefix = CHAIN_UNDERLYING_MAP[portfolio_name]
+        underlying_symbols = []
 
-        contracts: ContractData = self.main_engine.get_all_contracts()
+        contracts = self.main_engine.get_all_contracts()
         for contract in contracts:
             if contract.product == Product.OPTION:
                 continue
@@ -353,7 +353,7 @@ class OptionEngine(BaseEngine):
 
     def get_instrument(self, vt_symbol: str) -> InstrumentData:
         """"""
-        instrument: InstrumentData = self.instruments[vt_symbol]
+        instrument = self.instruments[vt_symbol]
         return instrument
 
     def set_timer_trigger(self, timer_trigger: int) -> None:
@@ -364,7 +364,7 @@ class OptionEngine(BaseEngine):
 class OptionHedgeEngine:
     """"""
 
-    def __init__(self, option_engine: OptionEngine) -> None:
+    def __init__(self, option_engine: OptionEngine):
         """"""
         self.option_engine: OptionEngine = option_engine
         self.main_engine: MainEngine = option_engine.main_engine
@@ -373,14 +373,14 @@ class OptionHedgeEngine:
         # Hedging parameters
         self.portfolio_name: str = ""
         self.vt_symbol: str = ""
-        self.timer_trigger: int = 5
-        self.delta_target: int = 0
-        self.delta_range: int = 0
-        self.hedge_payup: int = 1
+        self.timer_trigger = 5
+        self.delta_target = 0
+        self.delta_range = 0
+        self.hedge_payup = 1
 
         self.active: bool = False
         self.active_orderids: Set[str] = set()
-        self.timer_count: int = 0
+        self.timer_count = 0
 
         self.register_event()
 
@@ -451,35 +451,35 @@ class OptionHedgeEngine:
         delta_min = self.delta_target - self.delta_range
 
         # Do nothing if portfolio delta is in the allowed range
-        portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
+        portfolio = self.option_engine.get_portfolio(self.portfolio_name)
         if delta_min <= portfolio.pos_delta <= delta_max:
             return
 
         # Calculate volume of contract to hedge
         delta_to_hedge = self.delta_target - portfolio.pos_delta
-        instrument: InstrumentData = self.option_engine.get_instrument(self.vt_symbol)
+        instrument = self.option_engine.get_instrument(self.vt_symbol)
         hedge_volume = delta_to_hedge / instrument.cash_delta
 
         # Send hedge orders
-        tick: TickData = self.main_engine.get_tick(self.vt_symbol)
-        contract: ContractData = self.main_engine.get_contract(self.vt_symbol)
-        holding: PositionHolding = self.option_engine.get_position_holding(self.vt_symbol)
+        tick = self.main_engine.get_tick(self.vt_symbol)
+        contract = self.main_engine.get_contract(self.vt_symbol)
+        holding = self.option_engine.get_position_holding(self.vt_symbol)
 
         # Check if hedge volume meets contract minimum trading volume
         if abs(hedge_volume) < contract.min_volume:
             return
 
         if hedge_volume > 0:
-            price: float = tick.ask_price_1 + contract.pricetick * self.hedge_payup
-            direction: Direction = Direction.LONG
+            price = tick.ask_price_1 + contract.pricetick * self.hedge_payup
+            direction = Direction.LONG
 
             if holding:
                 available = holding.short_pos - holding.short_pos_frozen
             else:
                 available = 0
         else:
-            price: float = tick.bid_price_1 - contract.pricetick * self.hedge_payup
-            direction: Direction = Direction.SHORT
+            price = tick.bid_price_1 - contract.pricetick * self.hedge_payup
+            direction = Direction.SHORT
 
             if holding:
                 available = holding.long_pos - holding.long_pos_frozen
@@ -488,7 +488,7 @@ class OptionHedgeEngine:
 
         order_volume = abs(hedge_volume)
 
-        req: OrderRequest = OrderRequest(
+        req = OrderRequest(
             symbol=contract.symbol,
             exchange=contract.exchange,
             direction=direction,
@@ -501,28 +501,28 @@ class OptionHedgeEngine:
         # Close positon if opposite available is enough
         if available > order_volume:
             req.offset = Offset.CLOSE
-            vt_orderid: str = self.main_engine.send_order(req, contract.gateway_name)
+            vt_orderid = self.main_engine.send_order(req, contract.gateway_name)
             self.active_orderids.add(vt_orderid)
         # Open position if no oppsite available
         elif not available:
             req.offset = Offset.OPEN
-            vt_orderid: str = self.main_engine.send_order(req, contract.gateway_name)
+            vt_orderid = self.main_engine.send_order(req, contract.gateway_name)
             self.active_orderids.add(vt_orderid)
         # Else close all opposite available and open left volume
         else:
-            close_req: OrderRequest = copy(req)
+            close_req = copy(req)
             close_req.offset = Offset.CLOSE
             close_req.volume = available
-            close_orderid: str = self.main_engine.send_order(close_req, contract.gateway_name)
+            close_orderid = self.main_engine.send_order(close_req, contract.gateway_name)
             self.active_orderids.add(close_orderid)
 
-            open_req: OrderRequest = copy(req)
+            open_req = copy(req)
             open_req.offset = Offset.OPEN
             open_req.volume = order_volume - available
-            open_orderid: str = self.main_engine.send_order(open_req, contract.gateway_name)
+            open_orderid = self.main_engine.send_order(open_req, contract.gateway_name)
             self.active_orderids.add(open_orderid)
 
-    def check_order_finished(self) -> bool:
+    def check_order_finished(self) -> None:
         """"""
         if self.active_orderids:
             return False
@@ -533,17 +533,17 @@ class OptionHedgeEngine:
         """"""
         for vt_orderid in self.active_orderids:
             order: OrderData = self.main_engine.get_order(vt_orderid)
-            req: CancelRequest = order.create_cancel_request()
+            req = order.create_cancel_request()
             self.main_engine.cancel_order(req, order.gateway_name)
 
 
 class OptionAlgoEngine:
 
-    def __init__(self, option_engine: OptionEngine) -> None:
+    def __init__(self, option_engine: OptionEngine):
         """"""
-        self.option_engine: OptionEngine = option_engine
-        self.main_engine: MainEngine = option_engine.main_engine
-        self.event_engine: EventEngine = option_engine.event_engine
+        self.option_engine = option_engine
+        self.main_engine = option_engine.main_engine
+        self.event_engine = option_engine.event_engine
 
         self.algos: Dict[str, ElectronicEyeAlgo] = {}
         self.active_algos: Dict[str, ElectronicEyeAlgo] = {}
@@ -558,10 +558,10 @@ class OptionAlgoEngine:
         if self.algos:
             return
 
-        portfolio: PortfolioData = self.option_engine.get_portfolio(portfolio_name)
+        portfolio = self.option_engine.get_portfolio(portfolio_name)
 
         for option in portfolio.options.values():
-            algo: ElectronicEyeAlgo = ElectronicEyeAlgo(self, option)
+            algo = ElectronicEyeAlgo(self, option)
             self.algos[option.vt_symbol] = algo
 
     def register_event(self) -> None:
@@ -581,13 +581,13 @@ class OptionAlgoEngine:
         """"""
         tick: TickData = event.data
 
-        algo: ElectronicEyeAlgo = self.algos[tick.vt_symbol]
+        algo = self.algos[tick.vt_symbol]
         algo.on_option_tick(tick)
 
     def process_order_event(self, event: Event) -> None:
         """"""
         order: OrderData = event.data
-        algo: ElectronicEyeAlgo = self.order_algo_map.get(order.vt_orderid, None)
+        algo = self.order_algo_map.get(order.vt_orderid, None)
 
         if algo:
             algo.on_order(order)
@@ -595,7 +595,7 @@ class OptionAlgoEngine:
     def process_trade_event(self, event: Event) -> None:
         """"""
         trade: TradeData = event.data
-        algo: ElectronicEyeAlgo = self.order_algo_map.get(trade.vt_orderid, None)
+        algo = self.order_algo_map.get(trade.vt_orderid, None)
 
         if algo:
             algo.on_trade(trade)
@@ -607,9 +607,9 @@ class OptionAlgoEngine:
 
     def start_algo_pricing(self, vt_symbol: str, params: dict) -> None:
         """"""
-        algo: ElectronicEyeAlgo = self.algos[vt_symbol]
+        algo = self.algos[vt_symbol]
 
-        result: bool = algo.start_pricing(params)
+        result = algo.start_pricing(params)
         if not result:
             return
 
@@ -627,9 +627,9 @@ class OptionAlgoEngine:
 
     def stop_algo_pricing(self, vt_symbol: str) -> None:
         """"""
-        algo: ElectronicEyeAlgo = self.algos[vt_symbol]
+        algo = self.algos[vt_symbol]
 
-        result: bool = algo.stop_pricing()
+        result = algo.stop_pricing()
         if not result:
             return
 
@@ -638,7 +638,7 @@ class OptionAlgoEngine:
             self.process_option_tick_event
         )
 
-        buf: list = self.underlying_algo_map[algo.underlying.vt_symbol]
+        buf = self.underlying_algo_map[algo.underlying.vt_symbol]
         buf.remove(algo)
 
         self.active_algos.pop(vt_symbol)
@@ -651,12 +651,12 @@ class OptionAlgoEngine:
 
     def start_algo_trading(self, vt_symbol: str, params: dict) -> None:
         """"""
-        algo: ElectronicEyeAlgo = self.algos[vt_symbol]
+        algo = self.algos[vt_symbol]
         algo.start_trading(params)
 
     def stop_algo_trading(self, vt_symbol: str) -> None:
         """"""
-        algo: ElectronicEyeAlgo = self.algos[vt_symbol]
+        algo = self.algos[vt_symbol]
         algo.stop_trading()
 
     def send_order(
@@ -669,9 +669,9 @@ class OptionAlgoEngine:
         volume: int
     ) -> str:
         """"""
-        contract: ContractData = self.main_engine.get_contract(vt_symbol)
+        contract = self.main_engine.get_contract(vt_symbol)
 
-        req: OrderRequest = OrderRequest(
+        req = OrderRequest(
             contract.symbol,
             contract.exchange,
             direction,
@@ -682,37 +682,37 @@ class OptionAlgoEngine:
             reference=f"{APP_NAME}_ElectronicEye"
         )
 
-        vt_orderid: str = self.main_engine.send_order(req, contract.gateway_name)
+        vt_orderid = self.main_engine.send_order(req, contract.gateway_name)
         self.order_algo_map[vt_orderid] = algo
 
         return vt_orderid
 
     def cancel_order(self, vt_orderid: str) -> None:
         """"""
-        order: OrderData = self.main_engine.get_order(vt_orderid)
-        req: CancelRequest = order.create_cancel_request()
+        order = self.main_engine.get_order(vt_orderid)
+        req = order.create_cancel_request()
         self.main_engine.cancel_order(req, order.gateway_name)
 
     def write_algo_log(self, algo: ElectronicEyeAlgo, msg: str) -> None:
         """"""
-        msg: str = f"[{algo.vt_symbol}] {msg}"
-        log: LogData = LogData(APP_NAME, msg)
-        event: Event = Event(EVENT_OPTION_ALGO_LOG, log)
+        msg = f"[{algo.vt_symbol}] {msg}"
+        log = LogData(APP_NAME, msg)
+        event = Event(EVENT_OPTION_ALGO_LOG, log)
         self.event_engine.put(event)
 
     def put_algo_pricing_event(self, algo: ElectronicEyeAlgo) -> None:
         """"""
-        event: Event = Event(EVENT_OPTION_ALGO_PRICING, algo)
+        event = Event(EVENT_OPTION_ALGO_PRICING, algo)
         self.event_engine.put(event)
 
     def put_algo_trading_event(self, algo: ElectronicEyeAlgo) -> None:
         """"""
-        event: Event = Event(EVENT_OPTION_ALGO_TRADING, algo)
+        event = Event(EVENT_OPTION_ALGO_TRADING, algo)
         self.event_engine.put(event)
 
     def put_algo_status_event(self, algo: ElectronicEyeAlgo) -> None:
         """"""
-        event: Event = Event(EVENT_OPTION_ALGO_STATUS, algo)
+        event = Event(EVENT_OPTION_ALGO_STATUS, algo)
         self.event_engine.put(event)
 
 
@@ -788,7 +788,7 @@ class OptionRiskEngine:
         else:
             cancel_order_ratio: float = 0
 
-        data: dict = {
+        data = {
             "trade_volume": self.trade_volume,
             "net_pos": self.net_pos,
             "order_count": len(self.all_orderids),
