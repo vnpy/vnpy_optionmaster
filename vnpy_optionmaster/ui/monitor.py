@@ -98,7 +98,7 @@ class MonitorTable(QtWidgets.QTableWidget):
         """
         self.menu: QtWidgets.QMenu = QtWidgets.QMenu(self)
 
-        resize_action = QtWidgets.QAction("调整列宽", self)
+        resize_action = QtGui.QAction("调整列宽", self)
         resize_action.triggered.connect(self.resizeColumnsToContents)
         self.menu.addAction(resize_action)
 
