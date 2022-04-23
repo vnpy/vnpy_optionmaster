@@ -25,7 +25,7 @@ mpl.rcParams['axes.unicode_minus'] = False
 
 class OptionVolatilityChart(QtWidgets.QWidget):
 
-    signal_timer: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
+    signal_timer: QtCore.Signal = QtCore.Signal(Event)
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """"""

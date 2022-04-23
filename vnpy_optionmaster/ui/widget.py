@@ -21,7 +21,7 @@ from .manager import ElectronicEyeManager, PricingVolatilityManager
 
 class OptionManager(QtWidgets.QWidget):
     """"""
-    signal_new_portfolio: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
+    signal_new_portfolio: QtCore.Signal = QtCore.Signal(Event)
 
     def __init__(self, main_engine: MainEngine, event_engine: EventEngine) -> None:
         """"""
@@ -334,7 +334,7 @@ class PortfolioDialog(QtWidgets.QDialog):
 
 class OptionManualTrader(QtWidgets.QWidget):
     """"""
-    signal_tick: QtCore.pyqtSignal = QtCore.pyqtSignal(TickData)
+    signal_tick: QtCore.Signal = QtCore.Signal(TickData)
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """"""
@@ -746,7 +746,7 @@ class OptionHedgeWidget(QtWidgets.QWidget):
 class OptionRiskWidget(QtWidgets.QWidget):
     """期权风险监控组件"""
 
-    signal: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
+    signal: QtCore.Signal = QtCore.Signal(Event)
 
     def __init__(self, option_engine: OptionEngine) -> None:
         """"""

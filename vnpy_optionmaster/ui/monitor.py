@@ -111,9 +111,9 @@ class MonitorTable(QtWidgets.QTableWidget):
 
 class OptionMarketMonitor(MonitorTable):
     """"""
-    signal_tick: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
-    signal_trade: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
-    signal_position: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
+    signal_tick: QtCore.Signal = QtCore.Signal(Event)
+    signal_trade: QtCore.Signal = QtCore.Signal(Event)
+    signal_position: QtCore.Signal = QtCore.Signal(Event)
 
     headers: List[Dict] = [
         {"name": "symbol", "display": "代码", "cell": MonitorCell},
@@ -324,9 +324,9 @@ class OptionMarketMonitor(MonitorTable):
 
 class OptionGreeksMonitor(MonitorTable):
     """"""
-    signal_tick: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
-    signal_trade: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
-    signal_position: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
+    signal_tick: QtCore.Signal = QtCore.Signal(Event)
+    signal_trade: QtCore.Signal = QtCore.Signal(Event)
+    signal_position: QtCore.Signal = QtCore.Signal(Event)
 
     headers: List[Dict] = [
         {"name": "long_pos", "display": "多仓", "cell": PosCell},
@@ -521,7 +521,7 @@ class OptionGreeksMonitor(MonitorTable):
 
 class OptionChainMonitor(MonitorTable):
     """"""
-    signal_timer: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
+    signal_timer: QtCore.Signal = QtCore.Signal(Event)
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str):
         """"""

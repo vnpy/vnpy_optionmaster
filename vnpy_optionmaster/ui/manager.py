@@ -199,10 +199,10 @@ class AlgoTradingButton(QtWidgets.QPushButton):
 class ElectronicEyeMonitor(QtWidgets.QTableWidget):
     """"""
 
-    signal_tick: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
-    signal_pricing: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
-    signal_status: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
-    signal_trade: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
+    signal_tick: QtCore.Signal = QtCore.Signal(Event)
+    signal_pricing: QtCore.Signal = QtCore.Signal(Event)
+    signal_status: QtCore.Signal = QtCore.Signal(Event)
+    signal_trade: QtCore.Signal = QtCore.Signal(Event)
 
     headers: List[Dict] = [
         {"name": "bid_volume", "display": "买量", "cell": BidCell},
@@ -511,7 +511,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
 class ElectronicEyeManager(QtWidgets.QWidget):
     """"""
 
-    signal_log = QtCore.pyqtSignal(Event)
+    signal_log = QtCore.Signal(Event)
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """"""
@@ -566,7 +566,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
         max_pos_button: QtWidgets.QPushButton = QtWidgets.QPushButton("设置")
         max_pos_button.clicked.connect(self.set_max_pos_for_all)
 
-        QLabel: QtWidgets.QLabel = QtWidgets.QLabel
+        QLabel = QtWidgets.QLabel
         grid: QtWidgets.QGridLayout = QtWidgets.QGridLayout()
         grid.addWidget(QLabel("价格价差"), 0, 0)
         grid.addWidget(self.price_spread_spin, 0, 1)
@@ -705,7 +705,7 @@ class VolatilityDoubleSpinBox(QtWidgets.QDoubleSpinBox):
 class PricingVolatilityManager(QtWidgets.QWidget):
     """"""
 
-    signal_timer: QtCore.pyqtSignal = QtCore.pyqtSignal(Event)
+    signal_timer: QtCore.Signal = QtCore.Signal(Event)
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """"""
