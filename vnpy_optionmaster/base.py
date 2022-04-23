@@ -503,7 +503,7 @@ class ChainData:
 
     def set_portfolio(self, portfolio: "PortfolioData") -> None:
         """"""
-        for option in self.options:
+        for option in self.options.values():
             option.set_portfolio(portfolio)
 
     def calculate_atm_price(self) -> None:
