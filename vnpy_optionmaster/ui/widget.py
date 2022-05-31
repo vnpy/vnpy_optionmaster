@@ -238,18 +238,6 @@ class PortfolioDialog(QtWidgets.QDialog):
 
         form.addRow("年化利率", self.interest_rate_spin)
 
-        # Inverse combo
-        self.inverse_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
-        self.inverse_combo.addItems(["正向", "反向"])
-
-        inverse: bool = portfolio_setting.get("inverse", False)
-        if inverse:
-            self.inverse_combo.setCurrentIndex(1)
-        else:
-            self.inverse_combo.setCurrentIndex(0)
-
-        form.addRow("合约模式", self.inverse_combo)
-
         # Greeks decimals precision
         self.precision_spin: QtWidgets.QSpinBox = QtWidgets.QSpinBox()
         self.precision_spin.setMinimum(0)
@@ -301,11 +289,6 @@ class PortfolioDialog(QtWidgets.QDialog):
         model_name: str = self.model_name_combo.currentText()
         interest_rate: float = self.interest_rate_spin.value() / 100
 
-        if self.inverse_combo.currentIndex() == 0:
-            inverse: bool = False
-        else:
-            inverse: bool = True
-
         precision: int = self.precision_spin.value()
 
         chain_underlying_map: dict = {}
@@ -320,7 +303,6 @@ class PortfolioDialog(QtWidgets.QDialog):
             model_name,
             interest_rate,
             chain_underlying_map,
-            inverse,
             precision
         )
 

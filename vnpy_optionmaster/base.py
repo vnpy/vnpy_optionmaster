@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Callable, Optional
 from types import ModuleType
 
@@ -129,7 +129,6 @@ class OptionData(InstrumentData):
         self.time_to_expiry: float = self.days_to_expiry / ANNUAL_DAYS
 
         self.interest_rate: float = 0
-        self.inverse: bool = False
 
         # Option portfolio related
         self.underlying: UnderlyingData = None
@@ -169,13 +168,8 @@ class OptionData(InstrumentData):
             return
         underlying_price += self.underlying_adjustment
 
-        # Adjustment for inverse option contract
-        if self.inverse:
-            ask_price: float = self.tick.ask_price_1 * underlying_price
-            bid_price: float = self.tick.bid_price_1 * underlying_price
-        else:
-            ask_price: float = self.tick.ask_price_1
-            bid_price: float = self.tick.bid_price_1
+        ask_price: float = self.tick.ask_price_1
+        bid_price: float = self.tick.bid_price_1
 
         self.ask_impv = self.calculate_impv(
             ask_price,
@@ -221,13 +215,6 @@ class OptionData(InstrumentData):
         self.cash_theta = theta * self.size
         self.cash_vega = vega * self.size
 
-        # Adjustment for inverse option contract
-        if self.inverse:
-            self.cash_delta /= underlying_price
-            self.cash_gamma /= underlying_price
-            self.cash_theta /= underlying_price
-            self.cash_vega /= underlying_price
-
     def calculate_pos_greeks(self) -> None:
         """"""
         if self.tick:
@@ -252,20 +239,11 @@ class OptionData(InstrumentData):
             self.option_type
         )
 
-        # Adjustment for inverse option contract
-        if self.inverse:
-            ref_price /= underlying_price
-
         return ref_price
 
     def update_tick(self, tick: TickData) -> None:
         """"""
         super().update_tick(tick)
-
-        if self.inverse:
-            current_dt: datetime = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-            self.days_to_expiry = self.option_expiry - current_dt
-            self.time_to_expiry = self.days_to_expiry / timedelta(365)
 
         self.calculate_option_impv()
 
@@ -293,10 +271,6 @@ class OptionData(InstrumentData):
     def set_interest_rate(self, interest_rate: float) -> None:
         """"""
         self.interest_rate = interest_rate
-
-    def set_inverse(self, inverse: bool) -> None:
-        """"""
-        self.inverse = inverse
 
     def set_pricing_model(self, pricing_model: ModuleType) -> None:
         """"""
@@ -372,7 +346,6 @@ class ChainData:
         self.atm_index: str = ""
         self.underlying_adjustment: float = 0
         self.days_to_expiry: int = 0
-        self.inverse: bool = False
 
         self.use_synthetic: bool = False
 
@@ -494,13 +467,6 @@ class ChainData:
         for option in self.options.values():
             option.set_pricing_model(pricing_model)
 
-    def set_inverse(self, inverse: bool) -> None:
-        """"""
-        self.inverse = inverse
-
-        for option in self.options.values():
-            option.set_inverse(inverse)
-
     def set_portfolio(self, portfolio: "PortfolioData") -> None:
         """"""
         for option in self.options.values():
@@ -544,13 +510,8 @@ class ChainData:
         atm_call: OptionData = self.calls[self.atm_index]
         atm_put: OptionData = self.puts[self.atm_index]
 
-        # Adjustment for inverse option contract
-        if self.inverse:
-            call_price: float = atm_call.mid_price * self.underlying.mid_price
-            put_price: float = atm_put.mid_price * self.underlying.mid_price
-        else:
-            call_price: float = atm_call.mid_price
-            put_price: float = atm_put.mid_price
+        call_price: float = atm_call.mid_price
+        put_price: float = atm_put.mid_price
 
         synthetic_price: float = call_price - put_price + self.atm_price
         self.underlying_adjustment = synthetic_price - self.underlying.mid_price
@@ -664,11 +625,6 @@ class PortfolioData:
         """"""
         for chain in self.chains.values():
             chain.set_pricing_model(pricing_model)
-
-    def set_inverse(self, inverse: bool) -> None:
-        """"""
-        for chain in self.chains.values():
-            chain.set_inverse(inverse)
 
     def set_precision(self, precision: int) -> None:
         """"""
