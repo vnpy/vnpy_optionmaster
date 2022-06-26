@@ -6,7 +6,7 @@ ANNUAL_DAYS = 240
 
 # Get public holidays data from Shanghai Stock Exchange
 cn_calendar: exchange_calendars.ExchangeCalendar = exchange_calendars.get_calendar('XSHG')
-holidays: list = [x.to_pydatetime() for x in cn_calendar.precomputed_holidays]
+holidays: list = [x.to_pydatetime() for x in cn_calendar.precomputed_holidays()]
 
 # Filter future public holidays
 start: datetime = datetime.today()
