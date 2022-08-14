@@ -1,3 +1,8 @@
+# 1.0.5版本
+
+1. 适配新版本exchange_calendars的函数调用方式
+2. 限制exchange_calendars依赖版本不低于4.1.1
+
 # 1.0.4版本
 
 1. 移除反向合约支持
