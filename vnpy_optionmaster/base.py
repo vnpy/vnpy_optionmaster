@@ -28,24 +28,42 @@ CHAIN_UNDERLYING_MAP: dict = {
     "510050_O.SSE": "510050",
     "510300_O.SSE": "510300",
     "159919_O.SZSE": "159919",
+    "159915_O.SZSE": "159915",
+    "159922_O.SZSE": "159922",
+    "510500_O.SSE": "510500",
 
     # Futures Options
     "IO.CFFEX": "IF",
     "HO.CFFEX": "IH",
+    "MO.CFFEX": "IM",
 
     "i_o.DCE": "i",
     "pg_o.DCE": "pg",
     "m_o.DCE": "m",
     "c_o.DCE": "c",
+    "l_o.DCE": "l",
+    "v_o.DCE": "v",
+    "pp_o.DCE": "pp",
+    "p_o.DCE": "p",
+    "a_o.DCE": "a",
+    "b_o.DCE": "b",
+    "y_o.DCE": "y",
 
     "cu_o.SHFE": "cu",
     "ru_o.SHFE": "ru",
     "au_o.SHFE": "au",
+    "al_o.SHFE": "al",
+    "zn_o.SHFE": "zn",
+
+    "sc_o.INE": "sc",
 
     "SR.CZCE": "SR",
     "CF.CZCE": "CF",
+    "OI.CZCE": "OI",
+    "PK.CZCE": "PK",
     "TA.CZCE": "TA",
     "MA.CZCE": "MA",
+    "ZC.CZCE": "ZC",
     "RM.CZCE": "RM",
 }
 
