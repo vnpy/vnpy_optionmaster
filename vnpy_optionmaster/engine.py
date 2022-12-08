@@ -20,12 +20,15 @@ from vnpy.trader.converter import OffsetConverter, PositionHolding
 from vnpy.trader.utility import extract_vt_symbol, round_to, save_json, load_json
 
 from .base import (
-    APP_NAME, CHAIN_UNDERLYING_MAP,
+    APP_NAME,
     EVENT_OPTION_NEW_PORTFOLIO,
-    EVENT_OPTION_ALGO_PRICING, EVENT_OPTION_ALGO_TRADING,
-    EVENT_OPTION_ALGO_STATUS, EVENT_OPTION_ALGO_LOG,
+    EVENT_OPTION_ALGO_PRICING,
+    EVENT_OPTION_ALGO_TRADING,
+    EVENT_OPTION_ALGO_STATUS,
+    EVENT_OPTION_ALGO_LOG,
     EVENT_OPTION_RISK_NOTICE,
-    InstrumentData, PortfolioData, OptionData
+    InstrumentData, PortfolioData, OptionData,
+    get_undrelying_prefix
 )
 try:
     from .pricing import black_76_cython as black_76
@@ -200,8 +203,6 @@ class OptionEngine(BaseEngine):
         if contract.product == Product.OPTION:
             exchange_name: str = contract.exchange.value
             portfolio_name: str = f"{contract.option_portfolio}.{exchange_name}"
-            if portfolio_name not in CHAIN_UNDERLYING_MAP:
-                return
 
             portfolio: PortfolioData = self.get_portfolio(portfolio_name)
             portfolio.add_option(contract)
@@ -331,7 +332,7 @@ class OptionEngine(BaseEngine):
 
     def get_underlying_symbols(self, portfolio_name: str) -> List[str]:
         """"""
-        underlying_prefix: str = CHAIN_UNDERLYING_MAP[portfolio_name]
+        underlying_prefix: str = get_undrelying_prefix(portfolio_name)
         underlying_symbols: list = []
 
         contracts: List[ContractData] = self.main_engine.get_all_contracts()
@@ -339,7 +340,10 @@ class OptionEngine(BaseEngine):
             if contract.product == Product.OPTION:
                 continue
 
-            if contract.symbol.startswith(underlying_prefix):
+            if (
+                underlying_prefix
+                and contract.symbol.startswith(underlying_prefix)
+            ):
                 underlying_symbols.append(contract.vt_symbol)
 
         underlying_symbols.sort()

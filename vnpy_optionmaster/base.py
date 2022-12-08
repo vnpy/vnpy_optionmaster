@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Dict, List, Callable, Optional
 from types import ModuleType
+from functools import lru_cache
 
 from vnpy.event import EventEngine
 from vnpy.event.engine import Event
@@ -21,51 +22,6 @@ EVENT_OPTION_ALGO_TRADING = "eOptionAlgoTrading"
 EVENT_OPTION_ALGO_STATUS = "eOptionAlgoStatus"
 EVENT_OPTION_ALGO_LOG = "eOptionAlgoLog"
 EVENT_OPTION_RISK_NOTICE = "eOptionRiskNotice"
-
-
-CHAIN_UNDERLYING_MAP: dict = {
-    # ETF Options
-    "510050_O.SSE": "510050",
-    "510300_O.SSE": "510300",
-    "159919_O.SZSE": "159919",
-    "159915_O.SZSE": "159915",
-    "159922_O.SZSE": "159922",
-    "510500_O.SSE": "510500",
-
-    # Futures Options
-    "IO.CFFEX": "IF",
-    "HO.CFFEX": "IH",
-    "MO.CFFEX": "IM",
-
-    "i_o.DCE": "i",
-    "pg_o.DCE": "pg",
-    "m_o.DCE": "m",
-    "c_o.DCE": "c",
-    "l_o.DCE": "l",
-    "v_o.DCE": "v",
-    "pp_o.DCE": "pp",
-    "p_o.DCE": "p",
-    "a_o.DCE": "a",
-    "b_o.DCE": "b",
-    "y_o.DCE": "y",
-
-    "cu_o.SHFE": "cu",
-    "ru_o.SHFE": "ru",
-    "au_o.SHFE": "au",
-    "al_o.SHFE": "al",
-    "zn_o.SHFE": "zn",
-
-    "sc_o.INE": "sc",
-
-    "SR.CZCE": "SR",
-    "CF.CZCE": "CF",
-    "OI.CZCE": "OI",
-    "PK.CZCE": "PK",
-    "TA.CZCE": "TA",
-    "MA.CZCE": "MA",
-    "ZC.CZCE": "ZC",
-    "RM.CZCE": "RM",
-}
 
 
 class InstrumentData:
@@ -692,3 +648,52 @@ class PortfolioData:
         """"""
         for chain in self.chains.values():
             chain.calculate_atm_price()
+
+
+@lru_cache(maxsize=100)
+def get_undrelying_prefix(portfolio_name: str) -> str:
+    """
+    基于期权产品名称获取对应标的代码
+
+    已知规则：
+    "510050_O.SSE": "510050"
+    "159919_O.SZSE": "159919"
+
+    "IO.CFFEX": "IF",
+    "HO.CFFEX": "IH",
+    "MO.CFFEX": "IM",
+
+    "i_o.DCE": "i",
+    "cu_o.SHFE": "cu",
+    "sc_o.INE": "sc",
+    "SR.CZCE": "SR",
+    """
+    # 上交所
+    if portfolio_name.endswith("SSE"):
+        return portfolio_name.replace("_O.SSE", "")
+    # 深交所
+    elif portfolio_name.endswith("SZSE"):
+        return portfolio_name.replace("_O.SZSE", "")
+    # 中金所（特殊规则）
+    elif portfolio_name.endswith("CFFEX"):
+        d: dict = {
+            "IO.CFFEX": "IF",
+            "HO.CFFEX": "IH",
+            "MO.CFFEX": "IM",
+        }
+        return d.get(portfolio_name, "")
+    # 上期所
+    elif portfolio_name.endswith("SHFE"):
+        return portfolio_name.replace("_o.SHFE")
+    # 能交所
+    elif portfolio_name.endswith("INE"):
+        return portfolio_name.replace("_o.INE")
+    # 大商所
+    elif portfolio_name.endswith("DCE"):
+        return portfolio_name.replace("_o.DCE")
+    # 郑商所
+    elif portfolio_name.endswith("CZCE"):
+        return portfolio_name.replace(".CZCE")
+    # 其他
+    else:
+        return ""
