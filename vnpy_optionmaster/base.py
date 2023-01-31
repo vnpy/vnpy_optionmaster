@@ -651,7 +651,7 @@ class PortfolioData:
 
 
 @lru_cache(maxsize=100)
-def get_undrelying_prefix(portfolio_name: str) -> str:
+def get_underlying_prefix(portfolio_name: str) -> str:
     """
     基于期权产品名称获取对应标的代码
 

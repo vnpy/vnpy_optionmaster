@@ -28,7 +28,7 @@ from .base import (
     EVENT_OPTION_ALGO_LOG,
     EVENT_OPTION_RISK_NOTICE,
     InstrumentData, PortfolioData, OptionData,
-    get_undrelying_prefix
+    get_underlying_prefix
 )
 try:
     from .pricing import black_76_cython as black_76
@@ -332,7 +332,7 @@ class OptionEngine(BaseEngine):
 
     def get_underlying_symbols(self, portfolio_name: str) -> List[str]:
         """"""
-        underlying_prefix: str = get_undrelying_prefix(portfolio_name)
+        underlying_prefix: str = get_underlying_prefix(portfolio_name)
         underlying_symbols: list = []
 
         contracts: List[ContractData] = self.main_engine.get_all_contracts()
