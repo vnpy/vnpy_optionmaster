@@ -372,9 +372,15 @@ class OptionGreeksMonitor(MonitorTable):
         self.greeks_precision: str = f"{portfolio.precision}f"
 
         # Set table row and column numbers
-        row_count: int = 1
+        row_count: int = 2
+
+        row_count += (len(portfolio.underlyings) + 1)
+
+        row_count += (len(portfolio.chains) + 1)
+
         for chain in portfolio.chains.values():
-            row_count += (1 + len(chain.indexes) * 2)
+            row_count += len(chain.options)
+
         self.setRowCount(row_count)
 
         column_count: int = len(self.headers) + 2
