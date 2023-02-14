@@ -684,16 +684,16 @@ def get_underlying_prefix(portfolio_name: str) -> str:
         return d.get(portfolio_name, "")
     # 上期所
     elif portfolio_name.endswith("SHFE"):
-        return portfolio_name.replace("_o.SHFE")
+        return portfolio_name.replace("_o.SHFE", "")
     # 能交所
     elif portfolio_name.endswith("INE"):
-        return portfolio_name.replace("_o.INE")
+        return portfolio_name.replace("_o.INE", "")
     # 大商所
     elif portfolio_name.endswith("DCE"):
-        return portfolio_name.replace("_o.DCE")
+        return portfolio_name.replace("_o.DCE", "")
     # 郑商所
     elif portfolio_name.endswith("CZCE"):
-        return portfolio_name.replace(".CZCE")
+        return portfolio_name.replace(".CZCE", "")
     # 其他
     else:
         return ""
