@@ -11,7 +11,7 @@ from vnpy.event import Event, EventEngine
 from vnpy.trader.engine import BaseEngine, MainEngine
 from vnpy.trader.event import (
     EVENT_TRADE, EVENT_TICK, EVENT_CONTRACT,
-    EVENT_TIMER, EVENT_ORDER, EVENT_POSITION
+    EVENT_TIMER, EVENT_ORDER
 )
 from vnpy.trader.constant import (
     Product, Offset, Direction, OrderType, Exchange, Status
@@ -65,9 +65,6 @@ class OptionEngine(BaseEngine):
 
         self.timer_count: int = 0
         self.timer_trigger: int = 60
-
-        self.offset_converter: OffsetConverter = OffsetConverter(main_engine)
-        self.get_position_holding = self.offset_converter.get_position_holding
 
         self.hedge_engine: OptionHedgeEngine = OptionHedgeEngine(self)
         self.algo_engine: OptionAlgoEngine = OptionAlgoEngine(self)
@@ -157,9 +154,7 @@ class OptionEngine(BaseEngine):
         """"""
         self.event_engine.register(EVENT_TICK, self.process_tick_event)
         self.event_engine.register(EVENT_CONTRACT, self.process_contract_event)
-        self.event_engine.register(EVENT_ORDER, self.process_order_event)
         self.event_engine.register(EVENT_TRADE, self.process_trade_event)
-        self.event_engine.register(EVENT_POSITION, self.process_position_event)
         self.event_engine.register(EVENT_TIMER, self.process_timer_event)
 
     def process_tick_event(self, event: Event) -> None:
@@ -176,15 +171,9 @@ class OptionEngine(BaseEngine):
 
         portfolio.update_tick(tick)
 
-    def process_order_event(self, event: Event) -> None:
-        """"""
-        order: OrderData = event.data
-        self.offset_converter.update_order(order)
-
     def process_trade_event(self, event: Event) -> None:
         """"""
         trade: TradeData = event.data
-        self.offset_converter.update_trade(trade)
 
         instrument: Optional[InstrumentData] = self.instruments.get(trade.vt_symbol, None)
         if not instrument:
@@ -206,11 +195,6 @@ class OptionEngine(BaseEngine):
 
             portfolio: PortfolioData = self.get_portfolio(portfolio_name)
             portfolio.add_option(contract)
-
-    def process_position_event(self, event: Event) -> None:
-        """"""
-        position: PositionData = event.data
-        self.offset_converter.update_position(position)
 
     def process_timer_event(self, event: Event) -> None:
         """"""
@@ -313,9 +297,10 @@ class OptionEngine(BaseEngine):
 
         # Update position volume
         for instrument in self.instruments.values():
-            holding: PositionHolding = self.offset_converter.get_position_holding(
-                instrument.vt_symbol
-            )
+            contract: ContractData = self.main_engine.get_contract(instrument.vt_symbol)
+            converter: OffsetConverter = self.main_engine.get_converter(contract.gateway_name)
+            holding: PositionHolding = converter.get_position_holding(instrument.vt_symbol)
+
             if holding:
                 instrument.update_holding(holding)
 
@@ -462,7 +447,8 @@ class OptionHedgeEngine:
         # Send hedge orders
         tick: Optional[TickData] = self.main_engine.get_tick(self.vt_symbol)
         contract: Optional[ContractData] = self.main_engine.get_contract(self.vt_symbol)
-        holding: PositionHolding = self.option_engine.get_position_holding(self.vt_symbol)
+        converter: OffsetConverter = self.main_engine.get_converter(contract.gateway_name)
+        holding: PositionHolding = converter.get_position_holding(self.vt_symbol)
 
         # Check if hedge volume meets contract minimum trading volume
         if abs(hedge_volume) < contract.min_volume:
