@@ -674,6 +674,12 @@ def get_underlying_prefix(portfolio_name: str) -> str:
     # 深交所
     elif portfolio_name.endswith("SZSE"):
         return portfolio_name.replace("_O.SZSE", "")
+    # 港交所
+    elif portfolio_name.endswith("SEHK"):
+        return portfolio_name.replace("_O.SEHK", "")
+    # 美股
+    elif portfolio_name.endswith("SMART"):
+        return portfolio_name.replace("_O.SMART", "")
     # 中金所（特殊规则）
     elif portfolio_name.endswith("CFFEX"):
         d: dict = {
