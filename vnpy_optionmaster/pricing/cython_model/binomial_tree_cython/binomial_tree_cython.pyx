@@ -98,8 +98,7 @@ def calculate_delta(
     option_price_change = option_tree[0, 1] - option_tree[1, 1]
     underlying_price_change = underlying_tree[0, 1] - underlying_tree[1, 1]
 
-    _delta = option_price_change / underlying_price_change
-    delta = _delta * f * 0.01
+    delta = option_price_change / underlying_price_change
     return delta
 
 def calculate_gamma(
@@ -122,10 +121,8 @@ def calculate_gamma(
     gamma_delta_2 = (option_tree[1, 2] - option_tree[2, 2]) / \
         (underlying_tree[1, 2] - underlying_tree[2, 2])
 
-    _gamma = (gamma_delta_1 - gamma_delta_2) / \
+    gamma = (gamma_delta_1 - gamma_delta_2) / \
         (0.5 * (underlying_tree[0, 2] - underlying_tree[2, 2]))
-    gamma = _gamma * pow(f, 2) * 0.0001
-
     return gamma
 
 
@@ -136,8 +133,7 @@ def calculate_theta(
     double t,
     double v,
     int cp,
-    int n = DEFAULT_STEP,
-    int annual_days = 240
+    int n = DEFAULT_STEP
 ) -> float:
     """Calcualte option theta"""
     cdef double dt, theta
@@ -145,26 +141,12 @@ def calculate_theta(
     option_tree, underlying_tree = generate_tree(f, k, r, t, v, cp, n)
 
     dt = t / n
-    theta = (option_tree[1, 2] - option_tree[0, 0]) / (2 * dt * annual_days)
 
+    theta = (option_tree[1, 2] - option_tree[0, 0]) / (2 * dt)
     return theta
 
 
-def calculate_vega(
-    double f,
-    double k,
-    double r,
-    double t,
-    double v,
-    int cp,
-    int n = DEFAULT_STEP
-) -> float:
-    """Calculate option vega(%)"""
-    vega = calculate_original_vega(f, k, r, t, v, cp, n) / 100
-    return vega
-
-
-cdef double calculate_original_vega(
+cdef double calculate_vega(
     double f,
     double k,
     double r,
@@ -187,8 +169,7 @@ def calculate_greeks(
     double t,
     double v,
     int cp,
-    int n = DEFAULT_STEP,
-    int annual_days = 240
+    int n = DEFAULT_STEP
 ) -> Tuple[float, float, float, float, float]:
     """Calculate option price and greeks"""
     cdef double dt = t / n
@@ -207,8 +188,7 @@ def calculate_greeks(
     option_price_change = option_tree[0, 1] - option_tree[1, 1]
     underlying_price_change = underlying_tree[0, 1] - underlying_tree[1, 1]
 
-    _delta = option_price_change / underlying_price_change
-    delta = _delta * f * 0.01
+    delta = option_price_change / underlying_price_change
 
     # Gamma
     gamma_delta_1 = (option_tree[0, 2] - option_tree[1, 2]) / \
@@ -216,15 +196,14 @@ def calculate_greeks(
     gamma_delta_2 = (option_tree[1, 2] - option_tree[2, 2]) / \
         (underlying_tree[1, 2] - underlying_tree[2, 2])
 
-    _gamma = (gamma_delta_1 - gamma_delta_2) / \
+    gamma = (gamma_delta_1 - gamma_delta_2) / \
         (0.5 * (underlying_tree[0, 2] - underlying_tree[2, 2]))
-    gamma = _gamma * pow(f, 2) * 0.0001
 
     # Theta
-    theta = (option_tree[1, 2] - option_tree[0, 0]) / (2 * dt * annual_days)
+    theta = (option_tree[1, 2] - option_tree[0, 0]) / (2 * dt)
 
     # Vega
-    vega = (option_tree_vega[0, 0] - option_tree[0, 0]) / (0.001 * v * 100)
+    vega = (option_tree_vega[0, 0] - option_tree[0, 0]) / (0.001 * v)
 
     return price, delta, gamma, theta, vega
 
@@ -263,7 +242,7 @@ def calculate_impv(
     for i in range(50):
         # Caculate option price and vega with current guess
         p = calculate_price(f, k, r, t, v, cp, n)
-        vega = calculate_original_vega(f, k, r, t, v, cp, n)
+        vega = calculate_vega(f, k, r, t, v, cp, n)
 
         # Break loop if vega too close to 0
         if not vega:

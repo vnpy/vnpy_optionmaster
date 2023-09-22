@@ -65,8 +65,7 @@ def calculate_delta(
     if not d1:
         d1 = calculate_d1(s, k, r, t, v)
 
-    _delta: float = cp * exp(-r * t) * cdf(cp * d1)
-    delta: float = _delta * s * 0.01
+    delta: float = cp * exp(-r * t) * cdf(cp * d1)
     return delta
 
 
@@ -87,9 +86,7 @@ def calculate_gamma(
     if not d1:
         d1 = calculate_d1(s, k, r, t, v)
 
-    _gamma = exp(-r * t) * pdf(d1) / (s * v * sqrt(t))
-    gamma = _gamma * pow(s, 2) * 0.0001
-
+    gamma = exp(-r * t) * pdf(d1) / (s * v * sqrt(t))
     return gamma
 
 
@@ -100,8 +97,7 @@ def calculate_theta(
     double t,
     double v,
     int cp,
-    double d1 = 0.0,
-    int annual_days = 240
+    double d1 = 0.0
 ) -> float:
     """Calculate option theta"""
     cdef double d2, _theta, theta
@@ -113,28 +109,13 @@ def calculate_theta(
         d1 = calculate_d1(s, k, r, t, v)
     d2: float = d1 - v * sqrt(t)
 
-    _theta = -s * exp(-r * t) * pdf(d1) * v / (2 * sqrt(t)) \
+    theta = -s * exp(-r * t) * pdf(d1) * v / (2 * sqrt(t)) \
         + cp * r * s * exp(-r * t) * cdf(cp * d1) \
         - cp * r * k * exp(-r * t) * cdf(cp * d2)
-    theta = _theta / annual_days
-
     return theta
 
 
 def calculate_vega(
-    double s,
-    double k,
-    double r,
-    double t,
-    double v,
-    double d1 = 0.0
-) -> float:
-    """Calculate option vega(%)"""
-    vega: float = calculate_original_vega(s, k, r, t, v, d1) / 100
-    return vega
-
-
-def calculate_original_vega(
     double s,
     double k,
     double r,
@@ -162,8 +143,7 @@ def calculate_greeks(
     double r,
     double t,
     double v,
-    int cp,
-    int annual_days = 240,
+    int cp
 ) -> Tuple[float, float, float, float, float]:
     """Calculate option price and greeks"""
     cdef double d1, price, delta, gamma, theta, vega
@@ -173,7 +153,7 @@ def calculate_greeks(
     price = calculate_price(s, k, r, t, v, cp, d1)
     delta = calculate_delta(s, k, r, t, v, cp, d1)
     gamma = calculate_gamma(s, k, r, t, v, d1)
-    theta = calculate_theta(s, k, r, t, v, cp, d1, annual_days)
+    theta = calculate_theta(s, k, r, t, v, cp, d1)
     vega = calculate_vega(s, k, r, t, v, d1)
     
     return price, delta, gamma, theta, vega
@@ -213,7 +193,7 @@ def calculate_impv(
     for i in range(50):
         # Caculate option price and vega with current guess
         p = calculate_price(s, k, r, t, v, cp)
-        vega = calculate_original_vega(s, k, r, t, v, cp)
+        vega = calculate_vega(s, k, r, t, v, cp)
 
         # Break loop if vega too close to 0
         if not vega:
