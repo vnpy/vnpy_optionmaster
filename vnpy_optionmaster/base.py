@@ -198,10 +198,10 @@ class OptionData(InstrumentData):
             self.option_type
         )
 
-        self.theo_delta = delta
-        self.theo_gamma = gamma
-        self.theo_theta = theta
-        self.theo_vega = vega
+        self.theo_delta = delta * self.size
+        self.theo_gamma = gamma * self.size
+        self.theo_theta = theta * self.size
+        self.theo_vega = vega * self.size
 
     def calculate_pos_greeks(self) -> None:
         """"""
@@ -274,7 +274,7 @@ class UnderlyingData(InstrumentData):
         """"""
         super().__init__(contract)
 
-        self.theo_delta: float = 1                  # 标的物理论Delta固定为1
+        self.theo_delta: float = self.size                  # 标的物理论Delta固定为1
         self.pos_delta: float = 0
         self.chains: Dict[str, ChainData] = {}
 
