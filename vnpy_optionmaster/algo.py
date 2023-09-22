@@ -275,7 +275,7 @@ class ElectronicEyeAlgo:
         # Calculate spread
         algo_spread: float = max(
             self.price_spread,
-            self.volatility_spread * option.cash_vega / option.size
+            self.volatility_spread * option.theo_vega / option.size
         )
         half_spread: float = algo_spread / 2
 

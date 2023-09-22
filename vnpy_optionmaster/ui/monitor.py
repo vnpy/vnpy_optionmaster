@@ -117,10 +117,10 @@ class OptionMarketMonitor(MonitorTable):
 
     headers: List[Dict] = [
         {"name": "symbol", "display": "代码", "cell": MonitorCell},
-        {"name": "cash_vega", "display": "Vega", "cell": GreeksCell},
-        {"name": "cash_theta", "display": "Theta", "cell": GreeksCell},
-        {"name": "cash_gamma", "display": "Gamma", "cell": GreeksCell},
-        {"name": "cash_delta", "display": "Delta", "cell": GreeksCell},
+        {"name": "theo_vega", "display": "Vega", "cell": GreeksCell},
+        {"name": "theo_theta", "display": "Theta", "cell": GreeksCell},
+        {"name": "theo_gamma", "display": "Gamma", "cell": GreeksCell},
+        {"name": "theo_delta", "display": "Delta", "cell": GreeksCell},
         {"name": "open_interest", "display": "持仓量", "cell": MonitorCell},
         {"name": "volume", "display": "成交量", "cell": MonitorCell},
         {"name": "bid_impv", "display": "买隐波", "cell": BidCell},
@@ -316,10 +316,10 @@ class OptionMarketMonitor(MonitorTable):
 
         option: InstrumentData = self.option_engine.get_instrument(vt_symbol)
 
-        option_cells["cash_delta"].setText(f"{option.cash_delta:.{self.greeks_precision}}")
-        option_cells["cash_gamma"].setText(f"{option.cash_gamma:.{self.greeks_precision}}")
-        option_cells["cash_theta"].setText(f"{option.cash_theta:.{self.greeks_precision}}")
-        option_cells["cash_vega"].setText(f"{option.cash_vega:.{self.greeks_precision}}")
+        option_cells["theo_delta"].setText(f"{option.theo_delta:.{self.greeks_precision}}")
+        option_cells["theo_gamma"].setText(f"{option.theo_gamma:.{self.greeks_precision}}")
+        option_cells["theo_theta"].setText(f"{option.theo_theta:.{self.greeks_precision}}")
+        option_cells["theo_vega"].setText(f"{option.theo_vega:.{self.greeks_precision}}")
 
 
 class OptionGreeksMonitor(MonitorTable):

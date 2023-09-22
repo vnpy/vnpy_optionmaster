@@ -684,7 +684,7 @@ class OptionHedgeWidget(QtWidgets.QWidget):
 
         # Check delta of underlying
         underlying: InstrumentData = self.option_engine.get_instrument(vt_symbol)
-        min_range: int = int(underlying.cash_delta * 0.6)
+        min_range: int = int(underlying.theo_delta * 0.6)
         if delta_range < min_range:
             msg: str = f"Delta对冲阈值({delta_range})低于对冲合约"\
                 f"Delta值的60%({min_range})，可能导致来回频繁对冲！"
