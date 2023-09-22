@@ -145,6 +145,13 @@ class OptionData(InstrumentData):
         ask_price: float = self.tick.ask_price_1
         bid_price: float = self.tick.bid_price_1
 
+        if ask_price and bid_price:
+            mid_price: float = (ask_price + bid_price) / 2
+        elif ask_price:
+            mid_price = ask_price
+        elif bid_price:
+            mid_price = ask_price
+
         self.ask_impv = self.calculate_impv(
             ask_price,
             underlying_price,
@@ -163,7 +170,14 @@ class OptionData(InstrumentData):
             self.option_type
         )
 
-        self.mid_impv = (self.ask_impv + self.bid_impv) / 2
+        self.mid_impv = self.calculate_impv(
+            mid_price,
+            underlying_price,
+            self.strike_price,
+            self.interest_rate,
+            self.time_to_expiry,
+            self.option_type
+        )
 
     def calculate_theo_greeks(self) -> None:
         """"""
@@ -175,7 +189,7 @@ class OptionData(InstrumentData):
             return
         underlying_price += self.underlying_adjustment
 
-        price, delta, gamma, theta, vega = self.calculate_greeks(
+        _, delta, gamma, theta, vega = self.calculate_greeks(
             underlying_price,
             self.strike_price,
             self.interest_rate,
@@ -184,10 +198,10 @@ class OptionData(InstrumentData):
             self.option_type
         )
 
-        self.theo_delta = delta * self.size
-        self.theo_gamma = gamma * self.size
-        self.theo_theta = theta * self.size
-        self.theo_vega = vega * self.size
+        self.theo_delta = delta
+        self.theo_gamma = gamma
+        self.theo_theta = theta
+        self.theo_vega = vega
 
     def calculate_pos_greeks(self) -> None:
         """"""
