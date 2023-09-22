@@ -16,19 +16,20 @@ def generate_tree(
     n: int
 ) -> Tuple[ndarray, ndarray]:
     """Generate binomial tree for pricing American option."""
-    dt = t / n
-    u = exp(v * sqrt(dt))
-    d = 1 / u
-    a = 1
-    tree_size = n + 1
-    underlying_tree = zeros((tree_size, tree_size))
-    option_tree = zeros((tree_size, tree_size))
+    dt: float = t / n
+    u: float = exp(v * sqrt(dt))
+    d: float = 1 / u
+    a: float = 1
+    tree_size: int = n + 1
+
+    underlying_tree: ndarray = zeros((tree_size, tree_size))
+    option_tree: ndarray = zeros((tree_size, tree_size))
 
     # Calculate risk neutral probability
-    p = (a - d) / (u - d)
-    p1 = p / a
-    p2 = (1 - p) / a
-    discount = exp(-r * dt)
+    p: float = (a - d) / (u - d)
+    p1: float = p / a
+    p2: float = (1 - p) / a
+    discount: float = exp(-r * dt)
 
     # Calculate underlying price tree
     underlying_tree[0, 0] = f
@@ -64,7 +65,7 @@ def calculate_price(
     n: int = DEFAULT_STEP
 ) -> float:
     """Calculate option price"""
-    option_tree, underlying_tree = generate_tree(f, k, r, t, v, cp, n)
+    option_tree, _ = generate_tree(f, k, r, t, v, cp, n)
     return option_tree[0, 0]
 
 
@@ -83,8 +84,7 @@ def calculate_delta(
     option_price_change: float = option_tree[0, 1] - option_tree[1, 1]
     underlying_price_change: float = underlying_tree[0, 1] - underlying_tree[1, 1]
 
-    _delta: float = option_price_change / underlying_price_change
-    delta: float = _delta * f * 0.01
+    delta: float = option_price_change / underlying_price_change
     return delta
 
 
@@ -105,10 +105,8 @@ def calculate_gamma(
     gamma_delta_2: float = (option_tree[1, 2] - option_tree[2, 2]) / \
         (underlying_tree[1, 2] - underlying_tree[2, 2])
 
-    _gamma: float = (gamma_delta_1 - gamma_delta_2) / \
+    gamma: float = (gamma_delta_1 - gamma_delta_2) / \
         (0.5 * (underlying_tree[0, 2] - underlying_tree[2, 2]))
-    gamma: float = _gamma * pow(f, 2) * 0.0001
-
     return gamma
 
 
@@ -119,15 +117,14 @@ def calculate_theta(
     t: float,
     v: float,
     cp: int,
-    n: int = DEFAULT_STEP,
-    annual_days: int = 240
+    n: int = DEFAULT_STEP
 ) -> float:
     """Calcualte option theta"""
-    option_tree, underlying_tree = generate_tree(f, k, r, t, v, cp, n)
+    option_tree, _ = generate_tree(f, k, r, t, v, cp, n)
 
-    dt = t / n
-    theta = (option_tree[1, 2] - option_tree[0, 0]) / (2 * dt * annual_days)
+    dt: float = t / n
 
+    theta = (option_tree[1, 2] - option_tree[0, 0]) / (2 * dt)
     return theta
 
 
@@ -140,24 +137,10 @@ def calculate_vega(
     cp: int,
     n: int = DEFAULT_STEP
 ) -> float:
-    """Calculate option vega(%)"""
-    vega = calculate_original_vega(f, k, r, t, v, cp, n) / 100
-    return vega
-
-
-def calculate_original_vega(
-    f: float,
-    k: float,
-    r: float,
-    t: float,
-    v: float,
-    cp: int,
-    n: int = DEFAULT_STEP
-) -> float:
     """Calculate option vega"""
-    price_1 = calculate_price(f, k, r, t, v, cp, n)
-    price_2 = calculate_price(f, k, r, t, v * 1.001, cp, n)
-    vega = (price_2 - price_1) / (v * 0.001)
+    price_1: float = calculate_price(f, k, r, t, v, cp, n)
+    price_2: float = calculate_price(f, k, r, t, v * 1.001, cp, n)
+    vega: float = (price_2 - price_1) / (v * 0.001)
     return vega
 
 
@@ -168,37 +151,34 @@ def calculate_greeks(
     t: float,
     v: float,
     cp: int,
-    n: int = DEFAULT_STEP,
-    annual_days: int = 240
+    n: int = DEFAULT_STEP
 ) -> Tuple[float, float, float, float, float]:
     """Calculate option price and greeks"""
-    dt = t / n
+    dt: float = t / n
     option_tree, underlying_tree = generate_tree(f, k, r, t, v, cp, n)
-    option_tree_vega, underlying_tree_vega = generate_tree(f, k, r, t, v * 1.001, cp, n)
+    option_tree_vega, _ = generate_tree(f, k, r, t, v * 1.001, cp, n)
 
     # Price
-    price = option_tree[0, 0]
+    price: float = option_tree[0, 0]
 
     # Delta
-    option_price_change = option_tree[0, 1] - option_tree[1, 1]
-    underlying_price_change = underlying_tree[0, 1] - underlying_tree[1, 1]
-    _delta: float = option_price_change / underlying_price_change
-    delta: float = _delta * f * 0.01
+    option_price_change: float = option_tree[0, 1] - option_tree[1, 1]
+    underlying_price_change: float = underlying_tree[0, 1] - underlying_tree[1, 1]
+    delta: float = option_price_change / underlying_price_change
 
     # Gamma
-    gamma_delta_1 = (option_tree[0, 2] - option_tree[1, 2]) / \
+    gamma_delta_1: float = (option_tree[0, 2] - option_tree[1, 2]) / \
         (underlying_tree[0, 2] - underlying_tree[1, 2])
-    gamma_delta_2 = (option_tree[1, 2] - option_tree[2, 2]) / \
+    gamma_delta_2: float = (option_tree[1, 2] - option_tree[2, 2]) / \
         (underlying_tree[1, 2] - underlying_tree[2, 2])
-    _gamma: float = (gamma_delta_1 - gamma_delta_2) / \
+    gamma: float = (gamma_delta_1 - gamma_delta_2) / \
         (0.5 * (underlying_tree[0, 2] - underlying_tree[2, 2]))
-    gamma: float = _gamma * pow(f, 2) * 0.0001
 
     # Theta
-    theta = (option_tree[1, 2] - option_tree[0, 0]) / (2 * dt * annual_days)
+    theta: float = (option_tree[1, 2] - option_tree[0, 0]) / 2 * dt
 
     # Vega
-    vega = (option_tree_vega[0, 0] - option_tree[0, 0]) / (0.001 * v * 100)
+    vega: float = (option_tree_vega[0, 0] - option_tree[0, 0]) / (0.001 * v)
 
     return price, delta, gamma, theta, vega
 
@@ -218,7 +198,7 @@ def calculate_impv(
         return 0
 
     # Check if option price meets minimum value (exercise value)
-    meet = False
+    meet: bool = False
 
     if cp == 1 and price > (f - k):
         meet = True
@@ -235,14 +215,14 @@ def calculate_impv(
     for i in range(50):
         # Caculate option price and vega with current guess
         p: float = calculate_price(f, k, r, t, v, cp, n)
-        vega: float = calculate_original_vega(f, k, r, t, v, cp, n)
+        vega: float = calculate_vega(f, k, r, t, v, cp, n)
 
         # Break loop if vega too close to 0
         if not vega:
             break
 
         # Calculate error value
-        dx = (price - p) / vega
+        dx: float = (price - p) / vega
 
         # Check if error value meets requirement
         if abs(dx) < 0.00001:
