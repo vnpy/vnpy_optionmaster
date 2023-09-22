@@ -175,7 +175,7 @@ def calculate_greeks(
         (0.5 * (underlying_tree[0, 2] - underlying_tree[2, 2]))
 
     # Theta
-    theta: float = (option_tree[1, 2] - option_tree[0, 0]) / 2 * dt
+    theta: float = (option_tree[1, 2] - option_tree[0, 0]) / (2 * dt)
 
     # Vega
     vega: float = (option_tree_vega[0, 0] - option_tree[0, 0]) / (0.001 * v)

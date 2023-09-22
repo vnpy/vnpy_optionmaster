@@ -146,7 +146,7 @@ def calculate_theta(
     return theta
 
 
-cdef double calculate_vega(
+def calculate_vega(
     double f,
     double k,
     double r,
@@ -154,7 +154,7 @@ cdef double calculate_vega(
     double v,
     int cp,
     int n = DEFAULT_STEP
-):
+) -> float:
     """Calculate option vega"""
     cdef double price_1 = calculate_price(f, k, r, t, v, cp, n)
     cdef double price_2 = calculate_price(f, k, r, t, v * 1.001, cp, n)
