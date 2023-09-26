@@ -200,8 +200,8 @@ class OptionData(InstrumentData):
 
         self.theo_delta = delta * self.size
         self.theo_gamma = gamma * self.size
-        self.theo_theta = theta * self.size
-        self.theo_vega = vega * self.size
+        self.theo_theta = theta * self.size / 240
+        self.theo_vega = vega * self.size / 100
 
     def calculate_pos_greeks(self) -> None:
         """"""
