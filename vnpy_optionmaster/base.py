@@ -151,6 +151,8 @@ class OptionData(InstrumentData):
             mid_price = ask_price
         elif bid_price:
             mid_price = ask_price
+        else:
+            mid_price = 0
 
         self.ask_impv = self.calculate_impv(
             ask_price,
