@@ -242,7 +242,7 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
         fig: Figure = Figure()
         canvas: FigureCanvas = FigureCanvas(fig)
 
-        self.ax = fig.gca(projection="3d")
+        self.ax = fig.add_subplot(projection="3d")
         self.ax.set_xlabel("价格涨跌 %")
         self.ax.set_ylabel("波动率涨跌 %")
         self.ax.set_zlabel("盈亏")
