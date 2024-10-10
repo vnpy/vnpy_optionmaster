@@ -37,7 +37,7 @@ class AlgoSpinBox(QtWidgets.QSpinBox):
 
         self.setMaximum(999999)
         self.setMinimum(-999999)
-        self.setAlignment(QtCore.Qt.AlignCenter)
+        self.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
     def get_value(self) -> int:
         """"""
@@ -72,7 +72,7 @@ class AlgoDoubleSpinBox(QtWidgets.QDoubleSpinBox):
         self.setDecimals(1)
         self.setMaximum(9999.9)
         self.setMinimum(0)
-        self.setAlignment(QtCore.Qt.AlignCenter)
+        self.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
     def get_value(self) -> float:
         """"""
@@ -247,7 +247,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         """"""
         self.setWindowTitle("电子眼")
         self.verticalHeader().setVisible(False)
-        self.setEditTriggers(self.NoEditTriggers)
+        self.setEditTriggers(self.EditTrigger.NoEditTriggers)
 
         # Set table row and column numbers
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
@@ -738,11 +738,11 @@ class PricingVolatilityManager(QtWidgets.QWidget):
             chain: ChainData = self.portfolio.get_chain(chain_symbol)
 
             table: QtWidgets.QTableWidget = QtWidgets.QTableWidget()
-            table.setEditTriggers(table.NoEditTriggers)
+            table.setEditTriggers(table.EditTrigger.NoEditTriggers)
             table.verticalHeader().setVisible(False)
             table.setRowCount(len(chain.indexes))
             table.horizontalHeader().setSectionResizeMode(
-                QtWidgets.QHeaderView.Stretch
+                QtWidgets.QHeaderView.ResizeMode.Stretch
             )
 
             labels: list = [
@@ -768,13 +768,13 @@ class PricingVolatilityManager(QtWidgets.QWidget):
                     index=index
                 )
                 pricing_impv_spin: VolatilityDoubleSpinBox = VolatilityDoubleSpinBox()
-                pricing_impv_spin.setAlignment(QtCore.Qt.AlignCenter)
+                pricing_impv_spin.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 pricing_impv_spin.valueChanged.connect(set_func)
 
                 check: QtWidgets.QCheckBox = QtWidgets.QCheckBox()
 
                 check_hbox: QtWidgets.QHBoxLayout = QtWidgets.QHBoxLayout()
-                check_hbox.setAlignment(QtCore.Qt.AlignCenter)
+                check_hbox.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 check_hbox.addWidget(check)
 
                 check_widget: QtWidgets.QWidget = QtWidgets.QWidget()

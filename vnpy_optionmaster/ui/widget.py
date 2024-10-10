@@ -129,7 +129,7 @@ class OptionManager(QtWidgets.QWidget):
         dialog: PortfolioDialog = PortfolioDialog(self.option_engine, portfolio_name)
         result: int = dialog.exec_()
 
-        if result == dialog.Accepted:
+        if result == dialog.DialogCode.Accepted:
             self.portfolio_combo.setEnabled(False)
             self.portfolio_button.setEnabled(False)
 
@@ -392,15 +392,15 @@ class OptionManualTrader(QtWidgets.QWidget):
         self.bp5_label: QtWidgets.QLabel = self.create_label(bid_color)
 
         self.bv1_label: QtWidgets.QLabel = self.create_label(
-            bid_color, alignment=QtCore.Qt.AlignRight)
+            bid_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
         self.bv2_label: QtWidgets.QLabel = self.create_label(
-            bid_color, alignment=QtCore.Qt.AlignRight)
+            bid_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
         self.bv3_label: QtWidgets.QLabel = self.create_label(
-            bid_color, alignment=QtCore.Qt.AlignRight)
+            bid_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
         self.bv4_label: QtWidgets.QLabel = self.create_label(
-            bid_color, alignment=QtCore.Qt.AlignRight)
+            bid_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
         self.bv5_label: QtWidgets.QLabel = self.create_label(
-            bid_color, alignment=QtCore.Qt.AlignRight)
+            bid_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
 
         self.ap1_label: QtWidgets.QLabel = self.create_label(ask_color)
         self.ap2_label: QtWidgets.QLabel = self.create_label(ask_color)
@@ -409,18 +409,18 @@ class OptionManualTrader(QtWidgets.QWidget):
         self.ap5_label: QtWidgets.QLabel = self.create_label(ask_color)
 
         self.av1_label: QtWidgets.QLabel = self.create_label(
-            ask_color, alignment=QtCore.Qt.AlignRight)
+            ask_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
         self.av2_label: QtWidgets.QLabel = self.create_label(
-            ask_color, alignment=QtCore.Qt.AlignRight)
+            ask_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
         self.av3_label: QtWidgets.QLabel = self.create_label(
-            ask_color, alignment=QtCore.Qt.AlignRight)
+            ask_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
         self.av4_label: QtWidgets.QLabel = self.create_label(
-            ask_color, alignment=QtCore.Qt.AlignRight)
+            ask_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
         self.av5_label: QtWidgets.QLabel = self.create_label(
-            ask_color, alignment=QtCore.Qt.AlignRight)
+            ask_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
 
         self.lp_label: QtWidgets.QLabel = self.create_label()
-        self.return_label: QtWidgets.QLabel = self.create_label(alignment=QtCore.Qt.AlignRight)
+        self.return_label: QtWidgets.QLabel = self.create_label(alignment=QtCore.Qt.AlignmentFlag.AlignRight)
 
         min_width: int = 70
         self.lp_label.setMinimumWidth(min_width)
@@ -528,7 +528,7 @@ class OptionManualTrader(QtWidgets.QWidget):
     def create_label(
         self,
         color: str = "",
-        alignment: int = QtCore.Qt.AlignLeft
+        alignment: int = QtCore.Qt.AlignmentFlag.AlignLeft
     ) -> QtWidgets.QLabel:
         """
         Create label with certain font color.

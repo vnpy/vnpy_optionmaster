@@ -29,7 +29,7 @@ class MonitorCell(QtWidgets.QTableWidgetItem):
 
         self.vt_symbol: str = vt_symbol
 
-        self.setTextAlignment(QtCore.Qt.AlignCenter)
+        self.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
 
 class IndexCell(MonitorCell):
@@ -151,7 +151,7 @@ class OptionMarketMonitor(MonitorTable):
         """"""
         self.setWindowTitle("T型报价")
         self.verticalHeader().setVisible(False)
-        self.setEditTriggers(self.NoEditTriggers)
+        self.setEditTriggers(self.EditTrigger.NoEditTriggers)
 
         # Store option and underlying symbols
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
@@ -359,7 +359,7 @@ class OptionGreeksMonitor(MonitorTable):
         """"""
         self.setWindowTitle("希腊值风险")
         self.verticalHeader().setVisible(False)
-        self.setEditTriggers(self.NoEditTriggers)
+        self.setEditTriggers(self.EditTrigger.NoEditTriggers)
 
         # Store option and underlying symbols
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
@@ -546,7 +546,7 @@ class OptionChainMonitor(MonitorTable):
         """"""
         self.setWindowTitle("期权链跟踪")
         self.verticalHeader().setVisible(False)
-        self.setEditTriggers(self.NoEditTriggers)
+        self.setEditTriggers(self.EditTrigger.NoEditTriggers)
 
         # Store option and underlying symbols
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
@@ -579,7 +579,7 @@ class OptionChainMonitor(MonitorTable):
 
         # Additional table adjustment
         horizontal_header: QtWidgets.QHeaderView = self.horizontalHeader()
-        horizontal_header.setSectionResizeMode(horizontal_header.Stretch)
+        horizontal_header.setSectionResizeMode(horizontal_header.ResizeMode.Stretch)
 
     def register_event(self) -> None:
         """"""
