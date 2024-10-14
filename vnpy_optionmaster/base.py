@@ -682,6 +682,7 @@ def get_underlying_prefix(portfolio_name: str) -> str:
     "cu_o.SHFE": "cu",
     "sc_o.INE": "sc",
     "SR.CZCE": "SR",
+    "lc_o.CFEX": "lc"
     """
     # 上交所
     if portfolio_name.endswith("SSE"):
@@ -715,6 +716,9 @@ def get_underlying_prefix(portfolio_name: str) -> str:
     # 郑商所
     elif portfolio_name.endswith("CZCE"):
         return portfolio_name.replace(".CZCE", "")
+    # 广期所
+    elif portfolio_name.endswith("GFEX"):
+        return portfolio_name.replace("_o.GFEX", "")
     # 其他
     else:
         return ""
