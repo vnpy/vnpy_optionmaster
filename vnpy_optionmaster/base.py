@@ -150,7 +150,7 @@ class OptionData(InstrumentData):
         elif ask_price:
             mid_price = ask_price
         elif bid_price:
-            mid_price = ask_price
+            mid_price = bid_price
         else:
             mid_price = 0
 
