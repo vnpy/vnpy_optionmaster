@@ -231,9 +231,6 @@ class ElectronicEyeAlgo:
             self.sell(price, option.long_pos)
             self.short(price, volume - option.long_pos)
 
-        self.order_ask_price = price
-        self.order_ask_volume = volume
-
     def cancel_order(self, vt_orderid: str) -> None:
         """"""
         self.write_log(f"委托撤单：[{vt_orderid}]")
