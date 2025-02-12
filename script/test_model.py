@@ -33,5 +33,10 @@ for py_model, cy_model in [
         print("delta", model.calculate_delta(s, k, r, t, v, cp))
         print("gamma", model.calculate_gamma(s, k, r, t, v, cp))
         print("theta", model.calculate_theta(s, k, r, t, v, cp))
-        print("vega", model.calculate_vega(s, k, r, t, v, cp))
+
+        if "tree" in model.__name__:
+            print("vega", model.calculate_vega(s, k, r, t, v, cp))
+        else:
+            print("vega", model.calculate_vega(s, k, r, t, v))
+
         print("greeks", model.calculate_greeks(s, k, r, t, v, cp))
