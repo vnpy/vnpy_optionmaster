@@ -192,7 +192,7 @@ def calculate_impv(
     for i in range(50):
         # Caculate option price and vega with current guess
         p = calculate_price(s, k, r, t, v, cp)
-        vega = calculate_vega(s, k, r, t, v, cp)
+        vega = calculate_vega(s, k, r, t, v)
 
         # Break loop if vega too close to 0
         if not vega:
