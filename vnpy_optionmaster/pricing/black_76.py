@@ -32,7 +32,7 @@ def calculate_price(
         return max(0, cp * (s - k))
 
     if not d1:
-        d1: float = calculate_d1(s, k, r, t, v)
+        d1 = calculate_d1(s, k, r, t, v)
     d2: float = d1 - v * sqrt(t)
 
     price: float = cp * (s * cdf(cp * d1) - k * cdf(cp * d2)) * exp(-r * t)
@@ -53,7 +53,7 @@ def calculate_delta(
         return 0
 
     if not d1:
-        d1: float = calculate_d1(s, k, r, t, v)
+        d1 = calculate_d1(s, k, r, t, v)
 
     delta: float = cp * exp(-r * t) * cdf(cp * d1)
     return delta
@@ -72,7 +72,7 @@ def calculate_gamma(
         return 0
 
     if not d1:
-        d1: float = calculate_d1(s, k, r, t, v)
+        d1 = calculate_d1(s, k, r, t, v)
 
     gamma: float = exp(-r * t) * pdf(d1) / (s * v * sqrt(t))
     return gamma
@@ -92,7 +92,7 @@ def calculate_theta(
         return 0
 
     if not d1:
-        d1: float = calculate_d1(s, k, r, t, v)
+        d1 = calculate_d1(s, k, r, t, v)
     d2: float = d1 - v * sqrt(t)
 
     theta: float = -s * exp(-r * t) * pdf(d1) * v / (2 * sqrt(t)) \
@@ -114,7 +114,7 @@ def calculate_vega(
         return 0
 
     if not d1:
-        d1: float = calculate_d1(s, k, r, t, v)
+        d1 = calculate_d1(s, k, r, t, v)
 
     vega: float = s * exp(-r * t) * pdf(d1) * sqrt(t)
     return vega
@@ -145,7 +145,7 @@ def calculate_impv(
     r: float,
     t: float,
     cp: int
-):
+) -> float:
     """Calculate option implied volatility"""
     # Check option price must be positive
     if price <= 0:

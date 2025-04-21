@@ -65,7 +65,7 @@ def calculate_price(
 ) -> float:
     """Calculate option price"""
     option_tree, _ = generate_tree(f, k, r, t, v, cp, n)
-    return option_tree[0, 0]
+    return option_tree[0, 0]                               # type: ignore
 
 
 def calculate_delta(
@@ -123,7 +123,7 @@ def calculate_theta(
 
     dt: float = t / n
 
-    theta = (option_tree[1, 2] - option_tree[0, 0]) / (2 * dt)
+    theta: float = (option_tree[1, 2] - option_tree[0, 0]) / (2 * dt)
     return theta
 
 
