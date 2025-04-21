@@ -30,9 +30,9 @@ from .base import (
     get_underlying_prefix
 )
 try:
-    from .pricing import black_76_cython as black_76
-    from .pricing import binomial_tree_cython as binomial_tree
-    from .pricing import black_scholes_cython as black_scholes
+    from .pricing import black_76_cython as black_76                # type: ignore
+    from .pricing import binomial_tree_cython as binomial_tree      # type: ignore
+    from .pricing import black_scholes_cython as black_scholes      # type: ignore
 except ImportError:
     from .pricing import (
         black_76, binomial_tree, black_scholes
@@ -247,7 +247,7 @@ class OptionEngine(BaseEngine):
                     gateway_name=APP_NAME
                 )
             else:
-                contract: ContractData | None = self.main_engine.get_contract(underlying_symbol)
+                contract = self.main_engine.get_contract(underlying_symbol)
             portfolio.set_chain_underlying(chain_symbol, contract)
 
         portfolio.set_interest_rate(interest_rate)
@@ -268,7 +268,8 @@ class OptionEngine(BaseEngine):
     def get_portfolio_setting(self, portfolio_name: str) -> dict:
         """"""
         portfolio_settings: dict = self.setting.setdefault("portfolio_settings", {})
-        return portfolio_settings.get(portfolio_name, {})
+        portfolio_setting: dict = portfolio_settings.get(portfolio_name, {})
+        return portfolio_setting
 
     def init_portfolio(self, portfolio_name: str) -> bool:
         """"""
@@ -462,8 +463,8 @@ class OptionHedgeEngine:
             else:
                 available = 0
         else:
-            price: float = tick.bid_price_1 - contract.pricetick * self.hedge_payup
-            direction: Direction = Direction.SHORT
+            price = tick.bid_price_1 - contract.pricetick * self.hedge_payup
+            direction = Direction.SHORT
 
             if holding:
                 available = holding.long_pos - holding.long_pos_frozen
@@ -490,14 +491,14 @@ class OptionHedgeEngine:
         # Open position if no oppsite available
         elif not available:
             req.offset = Offset.OPEN
-            vt_orderid: str = self.main_engine.send_order(req, contract.gateway_name)
+            vt_orderid = self.main_engine.send_order(req, contract.gateway_name)
             self.active_orderids.add(vt_orderid)
         # Else close all opposite available and open left volume
         else:
             close_req: OrderRequest = copy(req)
             close_req.offset = Offset.CLOSE
             close_req.volume = available
-            close_orderid: str = self.main_engine.send_order(close_req, contract.gateway_name)
+            close_orderid = self.main_engine.send_order(close_req, contract.gateway_name)
             self.active_orderids.add(close_orderid)
 
             open_req: OrderRequest = copy(req)
@@ -532,7 +533,7 @@ class OptionAlgoEngine:
         self.algos: dict[str, ElectronicEyeAlgo] = {}
         self.active_algos: dict[str, ElectronicEyeAlgo] = {}
 
-        self.underlying_algo_map: dict[str, ElectronicEyeAlgo] = defaultdict(list)
+        self.underlying_algo_map: dict[str, list[ElectronicEyeAlgo]] = defaultdict(list)
         self.order_algo_map: dict[str, ElectronicEyeAlgo] = {}
 
         self.register_event()
@@ -679,7 +680,7 @@ class OptionAlgoEngine:
 
     def write_algo_log(self, algo: ElectronicEyeAlgo, msg: str) -> None:
         """"""
-        msg: str = f"[{algo.vt_symbol}] {msg}"
+        msg = f"[{algo.vt_symbol}] {msg}"
         log: LogData = LogData(APP_NAME, msg)
         event: Event = Event(EVENT_OPTION_ALGO_LOG, log)
         self.event_engine.put(event)
@@ -765,12 +766,12 @@ class OptionRiskEngine:
         if self.net_pos:
             trade_position_ratio: float = self.trade_volume / abs(self.net_pos)
         else:
-            trade_position_ratio: float = 9999
+            trade_position_ratio = 9999
 
         if order_count:
             cancel_order_ratio: float = cancel_count / order_count
         else:
-            cancel_order_ratio: float = 0
+            cancel_order_ratio = 0
 
         data: dict = {
             "trade_volume": self.trade_volume,

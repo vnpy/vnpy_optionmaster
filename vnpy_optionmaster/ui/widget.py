@@ -8,7 +8,7 @@ from vnpy.trader.object import OrderRequest, CancelRequest, ContractData, TickDa
 from vnpy.trader.event import EVENT_TICK
 from vnpy.trader.utility import get_digits
 
-from ..base import APP_NAME, EVENT_OPTION_NEW_PORTFOLIO, EVENT_OPTION_RISK_NOTICE, PortfolioData, InstrumentData
+from ..base import APP_NAME, EVENT_OPTION_NEW_PORTFOLIO, EVENT_OPTION_RISK_NOTICE, PortfolioData, UnderlyingData
 from ..engine import OptionEngine, OptionHedgeEngine, PRICING_MODELS
 from .monitor import (
     OptionMarketMonitor, OptionGreeksMonitor, OptionChainMonitor,
@@ -32,15 +32,15 @@ class OptionManager(QtWidgets.QWidget):
 
         self.portfolio_name: str = ""
 
-        self.market_monitor: OptionMarketMonitor = None
-        self.greeks_monitor: OptionGreeksMonitor = None
-        self.volatility_chart: OptionVolatilityChart = None
-        self.chain_monitor: OptionChainMonitor = None
-        self.manual_trader: OptionManualTrader = None
-        self.hedge_widget: OptionHedgeWidget = None
-        self.scenario_chart: ScenarioAnalysisChart = None
-        self.eye_manager: ElectronicEyeManager = None
-        self.pricing_manager: PricingVolatilityManager = None
+        self.market_monitor: OptionMarketMonitor
+        self.greeks_monitor: OptionGreeksMonitor
+        self.volatility_chart: OptionVolatilityChart
+        self.chain_monitor: OptionChainMonitor
+        self.manual_trader: OptionManualTrader
+        self.hedge_widget: OptionHedgeWidget
+        self.scenario_chart: ScenarioAnalysisChart
+        self.eye_manager: ElectronicEyeManager
+        self.pricing_manager: PricingVolatilityManager
 
         self.init_ui()
         self.register_event()
@@ -682,7 +682,7 @@ class OptionHedgeWidget(QtWidgets.QWidget):
         hedge_payup: int = self.payup_spin.value()
 
         # Check delta of underlying
-        underlying: InstrumentData = self.option_engine.get_instrument(vt_symbol)
+        underlying: UnderlyingData = self.option_engine.get_instrument(vt_symbol)       # type: ignore
         min_range: int = int(underlying.theo_delta * 0.6)
         if delta_range < min_range:
             msg: str = f"Delta对冲阈值({delta_range})低于对冲合约"\
@@ -822,6 +822,6 @@ class OptionRiskWidget(QtWidgets.QWidget):
         """设置成交持仓比限制"""
         self.trade_position_limit = limit
 
-    def show_warning(self, msg) -> None:
+    def show_warning(self, msg: str) -> None:
         """显示提示信息"""
         self.tray_icon.showMessage("风险提示", msg)

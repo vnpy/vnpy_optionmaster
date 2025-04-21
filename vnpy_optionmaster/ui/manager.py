@@ -40,7 +40,8 @@ class AlgoSpinBox(QtWidgets.QSpinBox):
 
     def get_value(self) -> int:
         """"""
-        return self.value()
+        value: int = self.value()
+        return value
 
     def set_value(self, value: int) -> None:
         """"""
@@ -75,7 +76,8 @@ class AlgoDoubleSpinBox(QtWidgets.QDoubleSpinBox):
 
     def get_value(self) -> float:
         """"""
-        return self.value()
+        value: float = self.value()
+        return value
 
     def set_value(self, value: float) -> None:
         """"""
@@ -107,12 +109,12 @@ class AlgoDirectionCombo(QtWidgets.QComboBox):
                 "short_allowed": True
             }
         elif self.currentText() == "做多":
-            value: dict = {
+            value = {
                 "long_allowed": True,
                 "short_allowed": False
             }
         else:
-            value: dict = {
+            value = {
                 "long_allowed": False,
                 "short_allowed": True
             }
@@ -273,7 +275,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         chain_symbols.sort()
 
         for chain_symbol in chain_symbols:
-            chain: ChainData = portfolio.get_chain(chain_symbol)
+            chain = portfolio.get_chain(chain_symbol)
 
             self.setItem(
                 current_row,
@@ -698,7 +700,8 @@ class VolatilityDoubleSpinBox(QtWidgets.QDoubleSpinBox):
 
     def get_value(self) -> float:
         """"""
-        return self.value()
+        value: float = self.value()
+        return value
 
 
 class PricingVolatilityManager(QtWidgets.QWidget):
@@ -730,7 +733,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         vbox.addWidget(tab)
         self.setLayout(vbox)
 
-        self.chain_symbols: list = list(self.portfolio.chains.keys())
+        self.chain_symbols = list(self.portfolio.chains.keys())
         self.chain_symbols.sort()
 
         for chain_symbol in self.chain_symbols:
@@ -818,7 +821,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
             hbox.addWidget(button_increase)
             hbox.addWidget(button_decrease)
 
-            vbox: QtWidgets.QVBoxLayout = QtWidgets.QVBoxLayout()
+            vbox = QtWidgets.QVBoxLayout()
             vbox.addLayout(hbox)
             vbox.addWidget(table)
 
@@ -858,7 +861,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
             if index >= atm_index:
                 otm: OptionData = call
             else:
-                otm: OptionData = put
+                otm = put
 
             call.pricing_impv = otm.mid_impv
             put.pricing_impv = otm.mid_impv
@@ -884,7 +887,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
                 if index >= atm_index:
                     otm: OptionData = call
                 else:
-                    otm: OptionData = put
+                    otm = put
 
                 strike_prices.append(otm.strike_price)
                 pricing_impvs.append(otm.pricing_impv)
@@ -892,8 +895,8 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         cs: interpolate.CubicSpline = interpolate.CubicSpline(strike_prices, pricing_impvs)
 
         for index in chain.indexes:
-            call: OptionData = chain.calls[index]
-            put: OptionData = chain.puts[index]
+            call = chain.calls[index]
+            put = chain.puts[index]
 
             new_impv: float = float(cs(call.strike_price))
             call.pricing_impv = new_impv
@@ -944,9 +947,9 @@ class PricingVolatilityManager(QtWidgets.QWidget):
             if index >= atm_index:
                 otm: OptionData = chain.calls[index]
             else:
-                otm: OptionData = chain.puts[index]
+                otm = chain.puts[index]
 
-            value: int = round(otm.pricing_impv * 100, 1)
+            value: float = round(otm.pricing_impv * 100, 1)
 
             key: tuple = (chain_symbol, index)
             cells: dict | None = self.cells.get(key, None)
@@ -964,7 +967,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
             if index >= atm_index:
                 otm: OptionData = call
             else:
-                otm: OptionData = put
+                otm = put
 
             cells: dict = self.cells[(chain_symbol, index)]
             cells["otm_impv"].setText(f"{otm.mid_impv:.1%}")

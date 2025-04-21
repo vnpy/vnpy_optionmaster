@@ -1,4 +1,3 @@
-
 import pyqtgraph as pg
 
 from vnpy.trader.ui import QtWidgets, QtCore, QtGui
@@ -205,6 +204,8 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
 
         self.init_ui()
 
+        self.ax: Axes3D
+
     def init_ui(self) -> None:
         """"""
         self.setWindowTitle("情景分析")
@@ -244,7 +245,7 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
         self.ax = fig.add_subplot(projection="3d")
         self.ax.set_xlabel("价格涨跌 %")
         self.ax.set_ylabel("波动率涨跌 %")
-        self.ax.set_zlabel("盈亏")
+        self.ax.set_zlabel("盈亏")               # type: ignore
 
         # Set layout
         hbox1: QtWidgets.QHBoxLayout = QtWidgets.QHBoxLayout()
@@ -310,7 +311,7 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
 
             for price_change in price_changes:
                 portfolio_pnl = 0
-                portfolio_delta = 0
+                portfolio_delta = 0.0
                 portfolio_gamma = 0
                 portfolio_theta = 0
                 portfolio_vega = 0
@@ -342,7 +343,11 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
                         option.option_type
                     )
 
-                    diff = new_price - option.tick.last_price
+                    # 添加对option.tick为None的检查
+                    if option.tick is None:
+                        diff = 0
+                    else:
+                        diff = new_price - option.tick.last_price
                     multiplier = option.net_pos * option.size
 
                     portfolio_pnl += diff * multiplier
@@ -367,20 +372,20 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
         if target_name == "盈亏":
             target_data: list = pnls
         elif target_name == "Delta":
-            target_data: list = deltas
+            target_data = deltas
         elif target_name == "Gamma":
-            target_data: list = gammas
+            target_data = gammas
         elif target_name == "Theta":
-            target_data: list = thetas
+            target_data = thetas
         else:
-            target_data: list = vegas
+            target_data = vegas
 
         self.update_chart(price_changes * 100, impv_changes * 100, target_data, target_name)
 
     def update_chart(
         self,
-        price_changes: np.array,
-        impv_changes: np.array,
+        price_changes: np.ndarray,
+        impv_changes: np.ndarray,
         target_data: list[list[float]],
         target_name: str
     ) -> None:

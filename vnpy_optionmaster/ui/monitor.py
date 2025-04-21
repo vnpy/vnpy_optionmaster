@@ -101,7 +101,7 @@ class MonitorTable(QtWidgets.QTableWidget):
         resize_action.triggered.connect(self.resizeColumnsToContents)
         self.menu.addAction(resize_action)
 
-    def contextMenuEvent(self, event) -> None:
+    def contextMenuEvent(self, event: QtGui.QContextMenuEvent) -> None:
         """
         Show menu with right click.
         """
@@ -185,7 +185,7 @@ class OptionMarketMonitor(MonitorTable):
         chain_symbols.sort()
 
         for chain_symbol in chain_symbols:
-            chain: ChainData = portfolio.get_chain(chain_symbol)
+            chain = portfolio.get_chain(chain_symbol)
 
             self.setItem(
                 current_row,
@@ -278,8 +278,7 @@ class OptionMarketMonitor(MonitorTable):
         if not option_cells:
             return
 
-        option: InstrumentData = self.option_engine.get_instrument(vt_symbol)
-
+        option: OptionData = self.option_engine.get_instrument(vt_symbol)  # type: ignore
         option_cells["net_pos"].setText(str(option.net_pos))
 
     def update_price(self, vt_symbol: str) -> None:
@@ -288,7 +287,7 @@ class OptionMarketMonitor(MonitorTable):
         if not option_cells:
             return
 
-        option: InstrumentData = self.option_engine.get_instrument(vt_symbol)
+        option: OptionData = self.option_engine.get_instrument(vt_symbol)  # type: ignore
         tick: TickData = option.tick
         option_cells["bid_price"].setText(f'{tick.bid_price_1:0.4f}')
         option_cells["bid_volume"].setText(str(tick.bid_volume_1))
@@ -303,7 +302,7 @@ class OptionMarketMonitor(MonitorTable):
         if not option_cells:
             return
 
-        option: InstrumentData = self.option_engine.get_instrument(vt_symbol)
+        option: OptionData = self.option_engine.get_instrument(vt_symbol)  # type: ignore
         option_cells["bid_impv"].setText(f"{option.bid_impv * 100:.2f}")
         option_cells["ask_impv"].setText(f"{option.ask_impv * 100:.2f}")
 
@@ -313,7 +312,7 @@ class OptionMarketMonitor(MonitorTable):
         if not option_cells:
             return
 
-        option: InstrumentData = self.option_engine.get_instrument(vt_symbol)
+        option: OptionData = self.option_engine.get_instrument(vt_symbol)  # type: ignore
 
         option_cells["theo_delta"].setText(f"{option.theo_delta:.{self.greeks_precision}}")
         option_cells["theo_gamma"].setText(f"{option.theo_gamma:.{self.greeks_precision}}")
@@ -471,7 +470,7 @@ class OptionGreeksMonitor(MonitorTable):
 
     def update_underlying_tick(self, vt_symbol: str) -> None:
         """"""
-        underlying: InstrumentData = self.option_engine.get_instrument(vt_symbol)
+        underlying: UnderlyingData = self.option_engine.get_instrument(vt_symbol)  # type: ignore
         self.update_row(vt_symbol, "标的", underlying)
 
         for chain in underlying.chains.values():
@@ -480,7 +479,7 @@ class OptionGreeksMonitor(MonitorTable):
             for option in chain.options.values():
                 self.update_row(option.vt_symbol, "期权", option)
 
-        portfolio: PositionData = underlying.portfolio
+        portfolio: PortfolioData = underlying.portfolio
         self.update_row(portfolio.name, "组合", portfolio)
 
     def update_pos(self, vt_symbol: str) -> None:
@@ -489,7 +488,8 @@ class OptionGreeksMonitor(MonitorTable):
         if isinstance(instrument, OptionData):
             self.update_row(vt_symbol, "期权", instrument)
         else:
-            self.update_row(vt_symbol, "标的", instrument)
+            underlying: UnderlyingData = instrument  # type: ignore
+            self.update_row(vt_symbol, "标的", underlying)
 
         # For option, greeks of chain also needs to be updated.
         if isinstance(instrument, OptionData):
@@ -591,7 +591,7 @@ class OptionChainMonitor(MonitorTable):
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
 
         for chain in portfolio.chains.values():
-            underlying: UnderlyingData = chain.underlying
+            underlying: UnderlyingData = chain.underlying  # type: ignore
 
             underlying_symbol: str = underlying.vt_symbol.split(".")[0]
 
