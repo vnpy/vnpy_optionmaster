@@ -1,5 +1,6 @@
 from copy import copy
 from collections import defaultdict
+from typing import cast
 
 from vnpy.trader.object import (
     LogData, ContractData, TickData,
@@ -26,7 +27,7 @@ from .base import (
     EVENT_OPTION_ALGO_STATUS,
     EVENT_OPTION_ALGO_LOG,
     EVENT_OPTION_RISK_NOTICE,
-    InstrumentData, PortfolioData, OptionData,
+    InstrumentData, PortfolioData, OptionData, UnderlyingData,
     get_underlying_prefix
 )
 try:
@@ -220,6 +221,9 @@ class OptionEngine(BaseEngine):
     def subscribe_data(self, vt_symbol: str) -> None:
         """"""
         contract: ContractData | None = self.main_engine.get_contract(vt_symbol)
+        if not contract:
+            return
+
         req: SubscribeRequest = SubscribeRequest(contract.symbol, contract.exchange)
         self.main_engine.subscribe(req, contract.gateway_name)
 
@@ -335,9 +339,9 @@ class OptionEngine(BaseEngine):
 
         return underlying_symbols
 
-    def get_instrument(self, vt_symbol: str) -> InstrumentData:
+    def get_instrument(self, vt_symbol: str) -> InstrumentData | OptionData | UnderlyingData | None:
         """"""
-        instrument: InstrumentData = self.instruments[vt_symbol]
+        instrument: InstrumentData | OptionData | UnderlyingData | None = self.instruments.get(vt_symbol)
         return instrument
 
     def set_timer_trigger(self, timer_trigger: int) -> None:
@@ -441,14 +445,22 @@ class OptionHedgeEngine:
 
         # Calculate volume of contract to hedge
         delta_to_hedge = self.delta_target - portfolio.pos_delta
-        instrument: InstrumentData = self.option_engine.get_instrument(self.vt_symbol)
+        instrument: UnderlyingData = cast(UnderlyingData, self.option_engine.get_instrument(self.vt_symbol))
+
         hedge_volume = delta_to_hedge / instrument.theo_delta
 
         # Send hedge orders
         tick: TickData | None = self.main_engine.get_tick(self.vt_symbol)
-        contract: ContractData | None = self.main_engine.get_contract(self.vt_symbol)
-        converter: OffsetConverter = self.main_engine.get_converter(contract.gateway_name)
-        holding: PositionHolding = converter.get_position_holding(self.vt_symbol)
+        if not tick:
+            return
+
+        contract: ContractData = cast(ContractData, self.main_engine.get_contract(self.vt_symbol))
+
+        converter: OffsetConverter | None = self.main_engine.get_converter(contract.gateway_name)
+        if converter:
+            holding: PositionHolding = converter.get_position_holding(self.vt_symbol)
+        else:
+            holding = None
 
         # Check if hedge volume meets contract minimum trading volume
         if abs(hedge_volume) < contract.min_volume:
@@ -518,8 +530,9 @@ class OptionHedgeEngine:
         """"""
         for vt_orderid in self.active_orderids:
             order: OrderData | None = self.main_engine.get_order(vt_orderid)
-            req: CancelRequest = order.create_cancel_request()
-            self.main_engine.cancel_order(req, order.gateway_name)
+            if order:
+                req: CancelRequest = order.create_cancel_request()
+                self.main_engine.cancel_order(req, order.gateway_name)
 
 
 class OptionAlgoEngine:
@@ -655,6 +668,8 @@ class OptionAlgoEngine:
     ) -> str:
         """"""
         contract: ContractData | None = self.main_engine.get_contract(vt_symbol)
+        if not contract:
+            return ""
 
         req: OrderRequest = OrderRequest(
             contract.symbol,
@@ -675,8 +690,9 @@ class OptionAlgoEngine:
     def cancel_order(self, vt_orderid: str) -> None:
         """"""
         order: OrderData | None = self.main_engine.get_order(vt_orderid)
-        req: CancelRequest = order.create_cancel_request()
-        self.main_engine.cancel_order(req, order.gateway_name)
+        if order:
+            req: CancelRequest = order.create_cancel_request()
+            self.main_engine.cancel_order(req, order.gateway_name)
 
     def write_algo_log(self, algo: ElectronicEyeAlgo, msg: str) -> None:
         """"""

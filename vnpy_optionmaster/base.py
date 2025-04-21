@@ -322,13 +322,13 @@ class ChainData:
         self.pos_theta: float = 0
         self.pos_vega: float = 0
 
-        self.underlying: UnderlyingData | None = None
+        self.underlying: UnderlyingData
 
         self.options: dict[str, OptionData] = {}
         self.calls: dict[str, OptionData] = {}
         self.puts: dict[str, OptionData] = {}
 
-        self.portfolio: PortfolioData | None = None
+        self.portfolio: PortfolioData
 
         self.indexes: list[str] = []
         self.atm_price: float = 0

@@ -1,4 +1,5 @@
 import pyqtgraph as pg
+from typing import cast
 
 from vnpy.trader.ui import QtWidgets, QtCore, QtGui
 from vnpy.trader.event import EVENT_TIMER
@@ -204,8 +205,6 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
 
         self.init_ui()
 
-        self.ax: Axes3D
-
     def init_ui(self) -> None:
         """"""
         self.setWindowTitle("情景分析")
@@ -242,10 +241,11 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
         fig: Figure = Figure()
         canvas: FigureCanvas = FigureCanvas(fig)
 
-        self.ax = fig.add_subplot(projection="3d")
+        ax = fig.add_subplot(projection="3d")
+        self.ax = cast(Axes3D, ax)
         self.ax.set_xlabel("价格涨跌 %")
         self.ax.set_ylabel("波动率涨跌 %")
-        self.ax.set_zlabel("盈亏")               # type: ignore
+        self.ax.set_zlabel("盈亏")
 
         # Set layout
         hbox1: QtWidgets.QHBoxLayout = QtWidgets.QHBoxLayout()
@@ -401,5 +401,5 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
             Z=np.array(target_data),
             rstride=1,
             cstride=1,
-            cmap=matplotlib.cm.coolwarm
+            cmap='coolwarm'
         )

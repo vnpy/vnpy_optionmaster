@@ -1,5 +1,6 @@
 from copy import copy
 from functools import partial
+from typing import cast
 
 from scipy import interpolate
 
@@ -473,7 +474,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         if not cells:
             return
 
-        option: InstrumentData = self.option_engine.get_instrument(vt_symbol)
+        option: InstrumentData = cast(InstrumentData, self.option_engine.get_instrument(vt_symbol))
         cells["net_pos"].setText(str(option.net_pos))
 
     def start_algo_pricing(self, vt_symbol: str) -> None:

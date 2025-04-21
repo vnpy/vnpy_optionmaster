@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import cast
 
 from vnpy.event import EventEngine, Event
 from vnpy.trader.engine import MainEngine, BaseEngine
@@ -682,7 +683,7 @@ class OptionHedgeWidget(QtWidgets.QWidget):
         hedge_payup: int = self.payup_spin.value()
 
         # Check delta of underlying
-        underlying: UnderlyingData = self.option_engine.get_instrument(vt_symbol)       # type: ignore
+        underlying: UnderlyingData = cast(UnderlyingData, self.option_engine.get_instrument(vt_symbol))
         min_range: int = int(underlying.theo_delta * 0.6)
         if delta_range < min_range:
             msg: str = f"Delta对冲阈值({delta_range})低于对冲合约"\
