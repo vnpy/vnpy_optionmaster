@@ -1,4 +1,3 @@
-from typing import Dict, List
 
 import pyqtgraph as pg
 
@@ -38,10 +37,10 @@ class OptionVolatilityChart(QtWidgets.QWidget):
         self.timer_count: int = 0
         self.timer_trigger: int = 3
 
-        self.chain_checks: Dict[str, QtWidgets.QCheckBox] = {}
-        self.put_curves: Dict[str, pg.PlotCurveItem] = {}
-        self.call_curves: Dict[str, pg.PlotCurveItem] = {}
-        self.pricing_curves: Dict[str, pg.PlotCurveItem] = {}
+        self.chain_checks: dict[str, QtWidgets.QCheckBox] = {}
+        self.put_curves: dict[str, pg.PlotCurveItem] = {}
+        self.call_curves: dict[str, pg.PlotCurveItem] = {}
+        self.pricing_curves: dict[str, pg.PlotCurveItem] = {}
 
         self.colors: list = [
             (255, 0, 0),
@@ -382,7 +381,7 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
         self,
         price_changes: np.array,
         impv_changes: np.array,
-        target_data: List[List[float]],
+        target_data: list[list[float]],
         target_name: str
     ) -> None:
         """"""

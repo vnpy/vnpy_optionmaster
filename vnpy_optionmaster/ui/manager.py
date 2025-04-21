@@ -1,4 +1,3 @@
-from typing import Dict, List, Tuple, Optional
 from copy import copy
 from functools import partial
 
@@ -100,7 +99,7 @@ class AlgoDirectionCombo(QtWidgets.QComboBox):
             "做空"
         ])
 
-    def get_value(self) -> Dict[str, bool]:
+    def get_value(self) -> dict[str, bool]:
         """"""
         if self.currentText() == "双向":
             value: dict = {
@@ -204,7 +203,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
     signal_status: QtCore.Signal = QtCore.Signal(Event)
     signal_trade: QtCore.Signal = QtCore.Signal(Event)
 
-    headers: List[Dict] = [
+    headers: list[dict] = [
         {"name": "bid_volume", "display": "买量", "cell": BidCell},
         {"name": "bid_price", "display": "买价", "cell": BidCell},
         {"name": "ask_price", "display": "卖价", "cell": AskCell},
@@ -237,7 +236,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         self.portfolio_name: str = portfolio_name
         self.setting_filename: str = f"{portfolio_name}_electronic_eye.json"
 
-        self.cells: Dict[str, Dict] = {}
+        self.cells: dict[str, dict] = {}
 
         self.init_ui()
         self.register_event()
@@ -345,7 +344,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         for vt_symbol in self.cells.keys():
             self.update_net_pos(vt_symbol)
 
-            tick: Optional[TickData] = self.main_engine.get_tick(vt_symbol)
+            tick: TickData | None = self.main_engine.get_tick(vt_symbol)
             if tick:
                 self.update_tick(tick)
 
@@ -363,7 +362,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         setting: dict = load_json(self.setting_filename)
 
         for vt_symbol, cells in self.cells.items():
-            buf: Optional[dict] = setting.get(vt_symbol, None)
+            buf: dict | None = setting.get(vt_symbol, None)
             if buf:
                 for field in fields:
                     cells[field].set_value(buf[field])
@@ -419,7 +418,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
 
     def update_tick(self, tick: TickData) -> None:
         """"""
-        cells: Optional[dict] = self.cells.get(tick.vt_symbol, None)
+        cells: dict | None = self.cells.get(tick.vt_symbol, None)
         if not cells:
             return
 
@@ -468,7 +467,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
 
     def update_net_pos(self, vt_symbol: str) -> None:
         """"""
-        cells: Optional[dict] = self.cells.get(vt_symbol, None)
+        cells: dict | None = self.cells.get(vt_symbol, None)
         if not cells:
             return
 
@@ -715,9 +714,9 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         self.event_engine: EventEngine = option_engine.event_engine
         self.portfolio: PortfolioData = option_engine.get_portfolio(portfolio_name)
 
-        self.cells: Dict[Tuple, Dict] = {}
-        self.chain_symbols: List[str] = []
-        self.chain_atm_index: Dict[str, str] = {}
+        self.cells: dict[tuple, dict] = {}
+        self.chain_symbols: list[str] = []
+        self.chain_atm_index: dict[str, str] = {}
 
         self.init_ui()
         self.register_event()
@@ -950,7 +949,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
             value: int = round(otm.pricing_impv * 100, 1)
 
             key: tuple = (chain_symbol, index)
-            cells: Optional[dict] = self.cells.get(key, None)
+            cells: dict | None = self.cells.get(key, None)
             if cells:
                 cells["pricing_impv"].setValue(value)
 

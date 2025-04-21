@@ -1,6 +1,5 @@
 from scipy import stats
 from math import log, pow, sqrt, exp
-from typing import Tuple
 
 cdf = stats.norm.cdf
 pdf = stats.norm.pdf
@@ -128,7 +127,7 @@ def calculate_greeks(
     t: float,
     v: float,
     cp: int
-) -> Tuple[float, float, float, float, float]:
+) -> tuple[float, float, float, float, float]:
     """Calculate option price and greeks"""
     d1: float = calculate_d1(s, k, r, t, v)
     price: float = calculate_price(s, k, r, t, v, cp, d1)
@@ -167,7 +166,7 @@ def calculate_impv(
     # Calculate implied volatility with Newton's method
     v: float = 0.01     # Initial guess of volatility
 
-    for i in range(50):
+    for _i in range(50):
         # Caculate option price and vega with current guess
         p: float = calculate_price(s, k, r, t, v, cp)
         vega: float = calculate_vega(s, k, r, t, v)

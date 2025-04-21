@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List, Callable, Optional
+from collections.abc import Callable
 from types import ModuleType
 from functools import lru_cache
 
@@ -278,7 +278,7 @@ class UnderlyingData(InstrumentData):
 
         self.theo_delta: float = self.size                  # 标的物理论Delta固定为1
         self.pos_delta: float = 0
-        self.chains: Dict[str, ChainData] = {}
+        self.chains: dict[str, ChainData] = {}
 
     def add_chain(self, chain: "ChainData") -> None:
         """"""
@@ -324,13 +324,13 @@ class ChainData:
 
         self.underlying: UnderlyingData = None
 
-        self.options: Dict[str, OptionData] = {}
-        self.calls: Dict[str, OptionData] = {}
-        self.puts: Dict[str, OptionData] = {}
+        self.options: dict[str, OptionData] = {}
+        self.calls: dict[str, OptionData] = {}
+        self.puts: dict[str, OptionData] = {}
 
         self.portfolio: PortfolioData = None
 
-        self.indexes: List[float] = []
+        self.indexes: list[float] = []
         self.atm_price: float = 0
         self.atm_index: str = ""
         self.underlying_adjustment: float = 0
@@ -544,13 +544,13 @@ class PortfolioData:
         self.pos_vega: float = 0
 
         # All instrument
-        self._options: Dict[str, OptionData] = {}
-        self._chains: Dict[str, ChainData] = {}
+        self._options: dict[str, OptionData] = {}
+        self._chains: dict[str, ChainData] = {}
 
         # Active instrument
-        self.options: Dict[str, OptionData] = {}
-        self.chains: Dict[str, ChainData] = {}
-        self.underlyings: Dict[str, UnderlyingData] = {}
+        self.options: dict[str, OptionData] = {}
+        self.chains: dict[str, ChainData] = {}
+        self.underlyings: dict[str, UnderlyingData] = {}
 
         # Greeks decimals precision
         self.precision: int = 0
@@ -621,7 +621,7 @@ class PortfolioData:
 
     def set_chain_underlying(self, chain_symbol: str, contract: ContractData) -> None:
         """"""
-        underlying: Optional[UnderlyingData] = self.underlyings.get(contract.vt_symbol, None)
+        underlying: UnderlyingData | None = self.underlyings.get(contract.vt_symbol, None)
         if not underlying:
             underlying = UnderlyingData(contract)
             underlying.set_portfolio(self)
@@ -638,7 +638,7 @@ class PortfolioData:
 
     def get_chain(self, chain_symbol: str) -> ChainData:
         """"""
-        chain: Optional[ChainData] = self._chains.get(chain_symbol, None)
+        chain: ChainData | None = self._chains.get(chain_symbol, None)
 
         if not chain:
             chain = ChainData(chain_symbol, self.event_engine)

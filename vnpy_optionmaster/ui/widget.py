@@ -1,4 +1,3 @@
-from typing import Dict, List, Optional
 from pathlib import Path
 
 from vnpy.event import EventEngine, Event
@@ -249,7 +248,7 @@ class PortfolioDialog(QtWidgets.QDialog):
         form.addRow("Greeks小数位", self.precision_spin)
 
         # Underlying for each chain
-        self.combos: Dict[str, QtWidgets.QComboBox] = {}
+        self.combos: dict[str, QtWidgets.QComboBox] = {}
 
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
         underlying_symbols: list = self.option_engine.get_underlying_symbols(
@@ -326,7 +325,7 @@ class OptionManualTrader(QtWidgets.QWidget):
         self.main_engine: MainEngine = option_engine.main_engine
         self.event_engine: EventEngine = option_engine.event_engine
 
-        self.contracts: Dict[str, ContractData] = {}
+        self.contracts: dict[str, ContractData] = {}
         self.vt_symbol: str = ""
         self.price_digits: int = 0
 
@@ -447,7 +446,7 @@ class OptionManualTrader(QtWidgets.QWidget):
 
     def init_contracts(self) -> None:
         """"""
-        contracts: List[ContractData] = self.main_engine.get_all_contracts()
+        contracts: list[ContractData] = self.main_engine.get_all_contracts()
         for contract in contracts:
             self.contracts[contract.symbol] = contract
 
@@ -458,7 +457,7 @@ class OptionManualTrader(QtWidgets.QWidget):
     def send_order(self) -> None:
         """"""
         symbol: str = self.symbol_line.text()
-        contract: Optional[ContractData] = self.contracts.get(symbol, None)
+        contract: ContractData | None = self.contracts.get(symbol, None)
         if not contract:
             return
 
@@ -502,7 +501,7 @@ class OptionManualTrader(QtWidgets.QWidget):
     def _update_symbol(self) -> None:
         """"""
         symbol: str = self.symbol_line.text()
-        contract: Optional[ContractData] = self.contracts.get(symbol, None)
+        contract: ContractData | None = self.contracts.get(symbol, None)
 
         if contract and contract.vt_symbol == self.vt_symbol:
             return
@@ -519,7 +518,7 @@ class OptionManualTrader(QtWidgets.QWidget):
         self.vt_symbol = vt_symbol
         self.price_digits = get_digits(contract.pricetick)
 
-        tick: Optional[TickData] = self.main_engine.get_tick(vt_symbol)
+        tick: TickData | None = self.main_engine.get_tick(vt_symbol)
         if tick:
             self.update_tick(tick)
 
@@ -622,7 +621,7 @@ class OptionHedgeWidget(QtWidgets.QWidget):
         self.portfolio_name: str = portfolio_name
         self.hedge_engine: OptionHedgeEngine = option_engine.hedge_engine
 
-        self.symbol_map: Dict[str, str] = {}
+        self.symbol_map: dict[str, str] = {}
 
         self.init_ui()
 

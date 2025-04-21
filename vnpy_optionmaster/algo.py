@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Set
+from typing import TYPE_CHECKING
 
 from vnpy.trader.object import TickData, OrderData, TradeData
 from vnpy.trader.constant import Direction, Offset
@@ -39,8 +39,8 @@ class ElectronicEyeAlgo:
         self.max_order_size: int = 0
 
         # Variables
-        self.long_active_orderids: Set[str] = set()
-        self.short_active_orderids: Set[str] = set()
+        self.long_active_orderids: set[str] = set()
+        self.short_active_orderids: set[str] = set()
 
         self.algo_spread: float = 0.0
         self.ref_price: float = 0.0

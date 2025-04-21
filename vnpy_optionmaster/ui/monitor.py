@@ -1,4 +1,3 @@
-from typing import List, Dict, Set, Union, Optional
 from copy import copy
 from collections import defaultdict
 
@@ -115,7 +114,7 @@ class OptionMarketMonitor(MonitorTable):
     signal_trade: QtCore.Signal = QtCore.Signal(Event)
     signal_position: QtCore.Signal = QtCore.Signal(Event)
 
-    headers: List[Dict] = [
+    headers: list[dict] = [
         {"name": "symbol", "display": "代码", "cell": MonitorCell},
         {"name": "theo_vega", "display": "Vega", "cell": GreeksCell},
         {"name": "theo_theta", "display": "Theta", "cell": GreeksCell},
@@ -140,9 +139,9 @@ class OptionMarketMonitor(MonitorTable):
         self.event_engine: EventEngine = option_engine.event_engine
         self.portfolio_name: str = portfolio_name
 
-        self.cells: Dict[str, Dict] = {}
-        self.option_symbols: Set[str] = set()
-        self.underlying_option_map: Dict[str, List] = defaultdict(list)
+        self.cells: dict[str, dict] = {}
+        self.option_symbols: set[str] = set()
+        self.underlying_option_map: dict[str, list] = defaultdict(list)
 
         self.init_ui()
         self.register_event()
@@ -275,7 +274,7 @@ class OptionMarketMonitor(MonitorTable):
 
     def update_pos(self, vt_symbol: str) -> None:
         """"""
-        option_cells: Optional[dict] = self.cells.get(vt_symbol, None)
+        option_cells: dict | None = self.cells.get(vt_symbol, None)
         if not option_cells:
             return
 
@@ -285,7 +284,7 @@ class OptionMarketMonitor(MonitorTable):
 
     def update_price(self, vt_symbol: str) -> None:
         """"""
-        option_cells: Optional[dict] = self.cells.get(vt_symbol, None)
+        option_cells: dict | None = self.cells.get(vt_symbol, None)
         if not option_cells:
             return
 
@@ -300,7 +299,7 @@ class OptionMarketMonitor(MonitorTable):
 
     def update_impv(self, vt_symbol: str) -> None:
         """"""
-        option_cells: Optional[dict] = self.cells.get(vt_symbol, None)
+        option_cells: dict | None = self.cells.get(vt_symbol, None)
         if not option_cells:
             return
 
@@ -310,7 +309,7 @@ class OptionMarketMonitor(MonitorTable):
 
     def update_greeks(self, vt_symbol: str) -> None:
         """"""
-        option_cells: Optional[dict] = self.cells.get(vt_symbol, None)
+        option_cells: dict | None = self.cells.get(vt_symbol, None)
         if not option_cells:
             return
 
@@ -328,7 +327,7 @@ class OptionGreeksMonitor(MonitorTable):
     signal_trade: QtCore.Signal = QtCore.Signal(Event)
     signal_position: QtCore.Signal = QtCore.Signal(Event)
 
-    headers: List[Dict] = [
+    headers: list[dict] = [
         {"name": "long_pos", "display": "多仓", "cell": PosCell},
         {"name": "short_pos", "display": "空仓", "cell": PosCell},
         {"name": "net_pos", "display": "净仓", "cell": PosCell},
@@ -338,7 +337,7 @@ class OptionGreeksMonitor(MonitorTable):
         {"name": "pos_vega", "display": "Vega", "cell": GreeksCell}
     ]
 
-    ROW_DATA = Union[OptionData, UnderlyingData, ChainData, PortfolioData]
+    ROW_DATA = OptionData | UnderlyingData | ChainData | PortfolioData
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """"""
@@ -348,9 +347,9 @@ class OptionGreeksMonitor(MonitorTable):
         self.event_engine: EventEngine = option_engine.event_engine
         self.portfolio_name: str = portfolio_name
 
-        self.cells: Dict[tuple, Dict] = {}
-        self.option_symbols: Set[str] = set()
-        self.underlying_option_map: Dict[str, List] = defaultdict(list)
+        self.cells: dict[tuple, dict] = {}
+        self.option_symbols: set[str] = set()
+        self.underlying_option_map: dict[str, list] = defaultdict(list)
 
         self.init_ui()
         self.register_event()
@@ -537,7 +536,7 @@ class OptionChainMonitor(MonitorTable):
         self.event_engine: EventEngine = option_engine.event_engine
         self.portfolio_name: str = portfolio_name
 
-        self.cells: Dict[str, Dict] = {}
+        self.cells: dict[str, dict] = {}
 
         self.init_ui()
         self.register_event()

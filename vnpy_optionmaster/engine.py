@@ -1,4 +1,3 @@
-from typing import Dict, List, Set, Optional
 from copy import copy
 from collections import defaultdict
 
@@ -59,9 +58,9 @@ class OptionEngine(BaseEngine):
         """"""
         super().__init__(main_engine, event_engine, APP_NAME)
 
-        self.portfolios: Dict[str, PortfolioData] = {}
-        self.instruments: Dict[str, InstrumentData] = {}
-        self.active_portfolios: Dict[str, PortfolioData] = {}
+        self.portfolios: dict[str, PortfolioData] = {}
+        self.instruments: dict[str, InstrumentData] = {}
+        self.active_portfolios: dict[str, PortfolioData] = {}
 
         self.timer_count: int = 0
         self.timer_trigger: int = 60
@@ -161,7 +160,7 @@ class OptionEngine(BaseEngine):
         """"""
         tick: TickData = event.data
 
-        instrument: Optional[InstrumentData] = self.instruments.get(tick.vt_symbol, None)
+        instrument: InstrumentData | None = self.instruments.get(tick.vt_symbol, None)
         if not instrument:
             return
 
@@ -175,7 +174,7 @@ class OptionEngine(BaseEngine):
         """"""
         trade: TradeData = event.data
 
-        instrument: Optional[InstrumentData] = self.instruments.get(trade.vt_symbol, None)
+        instrument: InstrumentData | None = self.instruments.get(trade.vt_symbol, None)
         if not instrument:
             return
 
@@ -208,7 +207,7 @@ class OptionEngine(BaseEngine):
 
     def get_portfolio(self, portfolio_name: str) -> PortfolioData:
         """"""
-        portfolio: Optional[PositionData] = self.portfolios.get(portfolio_name, None)
+        portfolio: PositionData | None = self.portfolios.get(portfolio_name, None)
         if not portfolio:
             portfolio = PortfolioData(portfolio_name, self.event_engine)
             self.portfolios[portfolio_name] = portfolio
@@ -220,7 +219,7 @@ class OptionEngine(BaseEngine):
 
     def subscribe_data(self, vt_symbol: str) -> None:
         """"""
-        contract: Optional[ContractData] = self.main_engine.get_contract(vt_symbol)
+        contract: ContractData | None = self.main_engine.get_contract(vt_symbol)
         req: SubscribeRequest = SubscribeRequest(contract.symbol, contract.exchange)
         self.main_engine.subscribe(req, contract.gateway_name)
 
@@ -229,7 +228,7 @@ class OptionEngine(BaseEngine):
         portfolio_name: str,
         model_name: str,
         interest_rate: float,
-        chain_underlying_map: Dict[str, str],
+        chain_underlying_map: dict[str, str],
         precision: int = 0
     ) -> None:
         """"""
@@ -248,7 +247,7 @@ class OptionEngine(BaseEngine):
                     gateway_name=APP_NAME
                 )
             else:
-                contract: Optional[ContractData] = self.main_engine.get_contract(underlying_symbol)
+                contract: ContractData | None = self.main_engine.get_contract(underlying_symbol)
             portfolio.set_chain_underlying(chain_symbol, contract)
 
         portfolio.set_interest_rate(interest_rate)
@@ -266,7 +265,7 @@ class OptionEngine(BaseEngine):
         }
         self.save_setting()
 
-    def get_portfolio_setting(self, portfolio_name: str) -> Dict:
+    def get_portfolio_setting(self, portfolio_name: str) -> dict:
         """"""
         portfolio_settings: dict = self.setting.setdefault("portfolio_settings", {})
         return portfolio_settings.get(portfolio_name, {})
@@ -311,16 +310,16 @@ class OptionEngine(BaseEngine):
 
         return True
 
-    def get_portfolio_names(self) -> List[str]:
+    def get_portfolio_names(self) -> list[str]:
         """"""
         return list(self.portfolios.keys())
 
-    def get_underlying_symbols(self, portfolio_name: str) -> List[str]:
+    def get_underlying_symbols(self, portfolio_name: str) -> list[str]:
         """"""
         underlying_prefix: str = get_underlying_prefix(portfolio_name)
         underlying_symbols: list = []
 
-        contracts: List[ContractData] = self.main_engine.get_all_contracts()
+        contracts: list[ContractData] = self.main_engine.get_all_contracts()
         for contract in contracts:
             if contract.product == Product.OPTION:
                 continue
@@ -363,7 +362,7 @@ class OptionHedgeEngine:
         self.hedge_payup: int = 1
 
         self.active: bool = False
-        self.active_orderids: Set[str] = set()
+        self.active_orderids: set[str] = set()
         self.timer_count: int = 0
 
         self.register_event()
@@ -445,8 +444,8 @@ class OptionHedgeEngine:
         hedge_volume = delta_to_hedge / instrument.theo_delta
 
         # Send hedge orders
-        tick: Optional[TickData] = self.main_engine.get_tick(self.vt_symbol)
-        contract: Optional[ContractData] = self.main_engine.get_contract(self.vt_symbol)
+        tick: TickData | None = self.main_engine.get_tick(self.vt_symbol)
+        contract: ContractData | None = self.main_engine.get_contract(self.vt_symbol)
         converter: OffsetConverter = self.main_engine.get_converter(contract.gateway_name)
         holding: PositionHolding = converter.get_position_holding(self.vt_symbol)
 
@@ -517,7 +516,7 @@ class OptionHedgeEngine:
     def cancel_all(self) -> None:
         """"""
         for vt_orderid in self.active_orderids:
-            order: Optional[OrderData] = self.main_engine.get_order(vt_orderid)
+            order: OrderData | None = self.main_engine.get_order(vt_orderid)
             req: CancelRequest = order.create_cancel_request()
             self.main_engine.cancel_order(req, order.gateway_name)
 
@@ -530,11 +529,11 @@ class OptionAlgoEngine:
         self.main_engine: MainEngine = option_engine.main_engine
         self.event_engine: EventEngine = option_engine.event_engine
 
-        self.algos: Dict[str, ElectronicEyeAlgo] = {}
-        self.active_algos: Dict[str, ElectronicEyeAlgo] = {}
+        self.algos: dict[str, ElectronicEyeAlgo] = {}
+        self.active_algos: dict[str, ElectronicEyeAlgo] = {}
 
-        self.underlying_algo_map: Dict[str, ElectronicEyeAlgo] = defaultdict(list)
-        self.order_algo_map: Dict[str, ElectronicEyeAlgo] = {}
+        self.underlying_algo_map: dict[str, ElectronicEyeAlgo] = defaultdict(list)
+        self.order_algo_map: dict[str, ElectronicEyeAlgo] = {}
 
         self.register_event()
 
@@ -572,7 +571,7 @@ class OptionAlgoEngine:
     def process_order_event(self, event: Event) -> None:
         """"""
         order: OrderData = event.data
-        algo: Optional[ElectronicEyeAlgo] = self.order_algo_map.get(order.vt_orderid, None)
+        algo: ElectronicEyeAlgo | None = self.order_algo_map.get(order.vt_orderid, None)
 
         if algo:
             algo.on_order(order)
@@ -580,7 +579,7 @@ class OptionAlgoEngine:
     def process_trade_event(self, event: Event) -> None:
         """"""
         trade: TradeData = event.data
-        algo: Optional[ElectronicEyeAlgo] = self.order_algo_map.get(trade.vt_orderid, None)
+        algo: ElectronicEyeAlgo | None = self.order_algo_map.get(trade.vt_orderid, None)
 
         if algo:
             algo.on_trade(trade)
@@ -654,7 +653,7 @@ class OptionAlgoEngine:
         volume: int
     ) -> str:
         """"""
-        contract: Optional[ContractData] = self.main_engine.get_contract(vt_symbol)
+        contract: ContractData | None = self.main_engine.get_contract(vt_symbol)
 
         req: OrderRequest = OrderRequest(
             contract.symbol,
@@ -674,7 +673,7 @@ class OptionAlgoEngine:
 
     def cancel_order(self, vt_orderid: str) -> None:
         """"""
-        order: Optional[OrderData] = self.main_engine.get_order(vt_orderid)
+        order: OrderData | None = self.main_engine.get_order(vt_orderid)
         req: CancelRequest = order.create_cancel_request()
         self.main_engine.cancel_order(req, order.gateway_name)
 
@@ -709,7 +708,7 @@ class OptionRiskEngine:
         self.option_engine: OptionEngine = option_engine
         self.event_engine: EventEngine = option_engine.event_engine
 
-        self.instruments: Dict[str, InstrumentData] = option_engine.instruments
+        self.instruments: dict[str, InstrumentData] = option_engine.instruments
 
         # 成交持仓比风控
         self.trade_volume: int = 0
