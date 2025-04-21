@@ -26,6 +26,17 @@ from vnpy.trader.app import BaseApp
 from .engine import OptionEngine, APP_NAME
 
 
+__all__ = [
+    "APP_NAME",
+    "OptionEngine",
+    "OptionData",
+    "OptionMasterApp",
+]
+
+
+__version__ = "1.2.0"
+
+
 class OptionMasterApp(BaseApp):
     """"""
     app_name: str = APP_NAME
