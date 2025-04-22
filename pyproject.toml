@@ -36,7 +36,7 @@ keywords = ["quant", "quantitative", "investment", "trading", "algotrading", "op
 "Forum" = "https://www.vnpy.com/forum"
 
 [build-system]
-requires = ["hatchling>=1.27.0", "Cython>=3.0.12"]
+requires = ["hatchling>=1.27.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
@@ -46,18 +46,17 @@ pattern = "__version__ = ['\"](?P<version>[^'\"]+)['\"]"
 [tool.hatch.build.targets.wheel]
 packages = ["vnpy_optionmaster"]
 include-package-data = true
+exclude = [
+    "vnpy_optionmaster/pricing/cython_model",
+    "vnpy_optionmaster/pricing/cython_model/**/*"
+]
+
+[tool.hatch.build]
+packages = ["vnpy_optionmaster"]
+artifacts = ["vnpy_optionmaster/pricing/*.cp*-*.pyd"]
 
 [tool.hatch.build.targets.sdist]
 include = ["vnpy_optionmaster*"]
-
-[tool.hatch.build.hooks.cython]
-packages = [
-    "vnpy_optionmaster.pricing.cython_model",
-    "vnpy_optionmaster.pricing.cython_model.binomial_tree_cython",
-    "vnpy_optionmaster.pricing.cython_model.black_scholes_cython",
-    "vnpy_optionmaster.pricing.cython_model.black_76_cython"
-]
-build-lib = "vnpy_optionmaster/pricing"
 
 [tool.ruff]
 target-version = "py310"
