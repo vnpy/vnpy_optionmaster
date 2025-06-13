@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List, Callable, Optional
+from collections.abc import Callable
 from types import ModuleType
 from functools import lru_cache
 
@@ -42,8 +42,8 @@ class InstrumentData:
         self.net_pos: int = 0
         self.mid_price: float = 0
 
-        self.tick: TickData = None
-        self.portfolio: PortfolioData = None
+        self.tick: TickData | None = None
+        self.portfolio: PortfolioData
 
     def calculate_net_pos(self) -> None:
         """"""
@@ -105,14 +105,14 @@ class OptionData(InstrumentData):
         self.interest_rate: float = 0
 
         # Option portfolio related
-        self.underlying: UnderlyingData = None
-        self.chain: ChainData = None
+        self.underlying: UnderlyingData
+        self.chain: ChainData
         self.underlying_adjustment: float = 0
 
         # Pricing model
-        self.calculate_price: Callable = None
-        self.calculate_greeks: Callable = None
-        self.calculate_impv: Callable = None
+        self.calculate_price: Callable
+        self.calculate_greeks: Callable
+        self.calculate_impv: Callable
 
         # Implied volatility
         self.bid_impv: float = 0
@@ -278,7 +278,7 @@ class UnderlyingData(InstrumentData):
 
         self.theo_delta: float = self.size                  # 标的物理论Delta固定为1
         self.pos_delta: float = 0
-        self.chains: Dict[str, ChainData] = {}
+        self.chains: dict[str, ChainData] = {}
 
     def add_chain(self, chain: "ChainData") -> None:
         """"""
@@ -322,15 +322,15 @@ class ChainData:
         self.pos_theta: float = 0
         self.pos_vega: float = 0
 
-        self.underlying: UnderlyingData = None
+        self.underlying: UnderlyingData
 
-        self.options: Dict[str, OptionData] = {}
-        self.calls: Dict[str, OptionData] = {}
-        self.puts: Dict[str, OptionData] = {}
+        self.options: dict[str, OptionData] = {}
+        self.calls: dict[str, OptionData] = {}
+        self.puts: dict[str, OptionData] = {}
 
-        self.portfolio: PortfolioData = None
+        self.portfolio: PortfolioData
 
-        self.indexes: List[float] = []
+        self.indexes: list[str] = []
         self.atm_price: float = 0
         self.atm_index: str = ""
         self.underlying_adjustment: float = 0
@@ -463,8 +463,8 @@ class ChainData:
 
     def calculate_atm_price(self) -> None:
         """"""
-        min_diff = 0
-        atm_price = 0
+        min_diff: float = 0
+        atm_price: float = 0
         atm_index: str = ""
 
         for index, call in self.calls.items():
@@ -484,9 +484,9 @@ class ChainData:
             diff: float = abs(call_mid_price - put_mid_price)
 
             if not min_diff or diff < min_diff:
-                min_diff: float = diff
-                atm_price: float = call.strike_price
-                atm_index: str = call.chain_index
+                min_diff = diff
+                atm_price = call.strike_price
+                atm_index = call.chain_index
 
         self.atm_price = atm_price
         self.atm_index = atm_index
@@ -544,13 +544,13 @@ class PortfolioData:
         self.pos_vega: float = 0
 
         # All instrument
-        self._options: Dict[str, OptionData] = {}
-        self._chains: Dict[str, ChainData] = {}
+        self._options: dict[str, OptionData] = {}
+        self._chains: dict[str, ChainData] = {}
 
         # Active instrument
-        self.options: Dict[str, OptionData] = {}
-        self.chains: Dict[str, ChainData] = {}
-        self.underlyings: Dict[str, UnderlyingData] = {}
+        self.options: dict[str, OptionData] = {}
+        self.chains: dict[str, ChainData] = {}
+        self.underlyings: dict[str, UnderlyingData] = {}
 
         # Greeks decimals precision
         self.precision: int = 0
@@ -561,7 +561,7 @@ class PortfolioData:
         self.short_pos = 0
         self.net_pos = 0
 
-        self.pos_value = 0
+        self.pos_value = 0.0
         self.pos_delta = 0
         self.pos_gamma = 0
         self.pos_theta = 0
@@ -621,7 +621,7 @@ class PortfolioData:
 
     def set_chain_underlying(self, chain_symbol: str, contract: ContractData) -> None:
         """"""
-        underlying: Optional[UnderlyingData] = self.underlyings.get(contract.vt_symbol, None)
+        underlying: UnderlyingData | None = self.underlyings.get(contract.vt_symbol, None)
         if not underlying:
             underlying = UnderlyingData(contract)
             underlying.set_portfolio(self)
@@ -638,7 +638,7 @@ class PortfolioData:
 
     def get_chain(self, chain_symbol: str) -> ChainData:
         """"""
-        chain: Optional[ChainData] = self._chains.get(chain_symbol, None)
+        chain: ChainData | None = self._chains.get(chain_symbol, None)
 
         if not chain:
             chain = ChainData(chain_symbol, self.event_engine)
@@ -702,7 +702,8 @@ def get_underlying_prefix(portfolio_name: str) -> str:
             "HO.CFFEX": "IH",
             "MO.CFFEX": "IM",
         }
-        return d.get(portfolio_name, "")
+        prefix: str = d.get(portfolio_name, "")
+        return prefix
     # 上期所
     elif portfolio_name.endswith("SHFE"):
         return portfolio_name.replace("_o.SHFE", "")

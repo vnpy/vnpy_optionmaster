@@ -1,6 +1,5 @@
 from numpy import zeros, ndarray
 from math import exp, sqrt
-from typing import Tuple
 
 
 DEFAULT_STEP = 15
@@ -14,7 +13,7 @@ def generate_tree(
     v: float,
     cp: int,
     n: int
-) -> Tuple[ndarray, ndarray]:
+) -> tuple[ndarray, ndarray]:
     """Generate binomial tree for pricing American option."""
     dt: float = t / n
     u: float = exp(v * sqrt(dt))
@@ -66,7 +65,7 @@ def calculate_price(
 ) -> float:
     """Calculate option price"""
     option_tree, _ = generate_tree(f, k, r, t, v, cp, n)
-    return option_tree[0, 0]
+    return option_tree[0, 0]                               # type: ignore
 
 
 def calculate_delta(
@@ -124,7 +123,7 @@ def calculate_theta(
 
     dt: float = t / n
 
-    theta = (option_tree[1, 2] - option_tree[0, 0]) / (2 * dt)
+    theta: float = (option_tree[1, 2] - option_tree[0, 0]) / (2 * dt)
     return theta
 
 
@@ -152,7 +151,7 @@ def calculate_greeks(
     v: float,
     cp: int,
     n: int = DEFAULT_STEP
-) -> Tuple[float, float, float, float, float]:
+) -> tuple[float, float, float, float, float]:
     """Calculate option price and greeks"""
     dt: float = t / n
     option_tree, underlying_tree = generate_tree(f, k, r, t, v, cp, n)
@@ -212,7 +211,7 @@ def calculate_impv(
     # Calculate implied volatility with Newton's method
     v: float = 0.3      # Initial guess of volatility
 
-    for i in range(50):
+    for _i in range(50):
         # Caculate option price and vega with current guess
         p: float = calculate_price(f, k, r, t, v, cp, n)
         vega: float = calculate_vega(f, k, r, t, v, cp, n)

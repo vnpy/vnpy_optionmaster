@@ -1,6 +1,5 @@
-from typing import Dict, List
-
 import pyqtgraph as pg
+from typing import cast
 
 from vnpy.trader.ui import QtWidgets, QtCore, QtGui
 from vnpy.trader.event import EVENT_TIMER
@@ -38,10 +37,10 @@ class OptionVolatilityChart(QtWidgets.QWidget):
         self.timer_count: int = 0
         self.timer_trigger: int = 3
 
-        self.chain_checks: Dict[str, QtWidgets.QCheckBox] = {}
-        self.put_curves: Dict[str, pg.PlotCurveItem] = {}
-        self.call_curves: Dict[str, pg.PlotCurveItem] = {}
-        self.pricing_curves: Dict[str, pg.PlotCurveItem] = {}
+        self.chain_checks: dict[str, QtWidgets.QCheckBox] = {}
+        self.put_curves: dict[str, pg.PlotCurveItem] = {}
+        self.call_curves: dict[str, pg.PlotCurveItem] = {}
+        self.pricing_curves: dict[str, pg.PlotCurveItem] = {}
 
         self.colors: list = [
             (255, 0, 0),
@@ -242,7 +241,8 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
         fig: Figure = Figure()
         canvas: FigureCanvas = FigureCanvas(fig)
 
-        self.ax = fig.add_subplot(projection="3d")
+        ax = fig.add_subplot(projection="3d")
+        self.ax = cast(Axes3D, ax)
         self.ax.set_xlabel("价格涨跌 %")
         self.ax.set_ylabel("波动率涨跌 %")
         self.ax.set_zlabel("盈亏")
@@ -311,7 +311,7 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
 
             for price_change in price_changes:
                 portfolio_pnl = 0
-                portfolio_delta = 0
+                portfolio_delta = 0.0
                 portfolio_gamma = 0
                 portfolio_theta = 0
                 portfolio_vega = 0
@@ -343,7 +343,11 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
                         option.option_type
                     )
 
-                    diff = new_price - option.tick.last_price
+                    # 添加对option.tick为None的检查
+                    if option.tick is None:
+                        diff = 0
+                    else:
+                        diff = new_price - option.tick.last_price
                     multiplier = option.net_pos * option.size
 
                     portfolio_pnl += diff * multiplier
@@ -368,21 +372,21 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
         if target_name == "盈亏":
             target_data: list = pnls
         elif target_name == "Delta":
-            target_data: list = deltas
+            target_data = deltas
         elif target_name == "Gamma":
-            target_data: list = gammas
+            target_data = gammas
         elif target_name == "Theta":
-            target_data: list = thetas
+            target_data = thetas
         else:
-            target_data: list = vegas
+            target_data = vegas
 
         self.update_chart(price_changes * 100, impv_changes * 100, target_data, target_name)
 
     def update_chart(
         self,
-        price_changes: np.array,
-        impv_changes: np.array,
-        target_data: List[List[float]],
+        price_changes: np.ndarray,
+        impv_changes: np.ndarray,
+        target_data: list[list[float]],
         target_name: str
     ) -> None:
         """"""
@@ -397,5 +401,5 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
             Z=np.array(target_data),
             rstride=1,
             cstride=1,
-            cmap=matplotlib.cm.coolwarm
+            cmap='coolwarm'
         )

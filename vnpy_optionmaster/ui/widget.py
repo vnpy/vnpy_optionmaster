@@ -1,5 +1,5 @@
-from typing import Dict, List, Optional
 from pathlib import Path
+from typing import cast
 
 from vnpy.event import EventEngine, Event
 from vnpy.trader.engine import MainEngine, BaseEngine
@@ -9,7 +9,7 @@ from vnpy.trader.object import OrderRequest, CancelRequest, ContractData, TickDa
 from vnpy.trader.event import EVENT_TICK
 from vnpy.trader.utility import get_digits
 
-from ..base import APP_NAME, EVENT_OPTION_NEW_PORTFOLIO, EVENT_OPTION_RISK_NOTICE, PortfolioData, InstrumentData
+from ..base import APP_NAME, EVENT_OPTION_NEW_PORTFOLIO, EVENT_OPTION_RISK_NOTICE, PortfolioData, UnderlyingData
 from ..engine import OptionEngine, OptionHedgeEngine, PRICING_MODELS
 from .monitor import (
     OptionMarketMonitor, OptionGreeksMonitor, OptionChainMonitor,
@@ -33,15 +33,15 @@ class OptionManager(QtWidgets.QWidget):
 
         self.portfolio_name: str = ""
 
-        self.market_monitor: OptionMarketMonitor = None
-        self.greeks_monitor: OptionGreeksMonitor = None
-        self.volatility_chart: OptionVolatilityChart = None
-        self.chain_monitor: OptionChainMonitor = None
-        self.manual_trader: OptionManualTrader = None
-        self.hedge_widget: OptionHedgeWidget = None
-        self.scenario_chart: ScenarioAnalysisChart = None
-        self.eye_manager: ElectronicEyeManager = None
-        self.pricing_manager: PricingVolatilityManager = None
+        self.market_monitor: OptionMarketMonitor
+        self.greeks_monitor: OptionGreeksMonitor
+        self.volatility_chart: OptionVolatilityChart
+        self.chain_monitor: OptionChainMonitor
+        self.manual_trader: OptionManualTrader
+        self.hedge_widget: OptionHedgeWidget
+        self.scenario_chart: ScenarioAnalysisChart
+        self.eye_manager: ElectronicEyeManager
+        self.pricing_manager: PricingVolatilityManager
 
         self.init_ui()
         self.register_event()
@@ -249,7 +249,7 @@ class PortfolioDialog(QtWidgets.QDialog):
         form.addRow("Greeks小数位", self.precision_spin)
 
         # Underlying for each chain
-        self.combos: Dict[str, QtWidgets.QComboBox] = {}
+        self.combos: dict[str, QtWidgets.QComboBox] = {}
 
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
         underlying_symbols: list = self.option_engine.get_underlying_symbols(
@@ -326,7 +326,7 @@ class OptionManualTrader(QtWidgets.QWidget):
         self.main_engine: MainEngine = option_engine.main_engine
         self.event_engine: EventEngine = option_engine.event_engine
 
-        self.contracts: Dict[str, ContractData] = {}
+        self.contracts: dict[str, ContractData] = {}
         self.vt_symbol: str = ""
         self.price_digits: int = 0
 
@@ -447,7 +447,7 @@ class OptionManualTrader(QtWidgets.QWidget):
 
     def init_contracts(self) -> None:
         """"""
-        contracts: List[ContractData] = self.main_engine.get_all_contracts()
+        contracts: list[ContractData] = self.main_engine.get_all_contracts()
         for contract in contracts:
             self.contracts[contract.symbol] = contract
 
@@ -458,7 +458,7 @@ class OptionManualTrader(QtWidgets.QWidget):
     def send_order(self) -> None:
         """"""
         symbol: str = self.symbol_line.text()
-        contract: Optional[ContractData] = self.contracts.get(symbol, None)
+        contract: ContractData | None = self.contracts.get(symbol, None)
         if not contract:
             return
 
@@ -502,7 +502,7 @@ class OptionManualTrader(QtWidgets.QWidget):
     def _update_symbol(self) -> None:
         """"""
         symbol: str = self.symbol_line.text()
-        contract: Optional[ContractData] = self.contracts.get(symbol, None)
+        contract: ContractData | None = self.contracts.get(symbol, None)
 
         if contract and contract.vt_symbol == self.vt_symbol:
             return
@@ -519,7 +519,7 @@ class OptionManualTrader(QtWidgets.QWidget):
         self.vt_symbol = vt_symbol
         self.price_digits = get_digits(contract.pricetick)
 
-        tick: Optional[TickData] = self.main_engine.get_tick(vt_symbol)
+        tick: TickData | None = self.main_engine.get_tick(vt_symbol)
         if tick:
             self.update_tick(tick)
 
@@ -622,7 +622,7 @@ class OptionHedgeWidget(QtWidgets.QWidget):
         self.portfolio_name: str = portfolio_name
         self.hedge_engine: OptionHedgeEngine = option_engine.hedge_engine
 
-        self.symbol_map: Dict[str, str] = {}
+        self.symbol_map: dict[str, str] = {}
 
         self.init_ui()
 
@@ -683,7 +683,7 @@ class OptionHedgeWidget(QtWidgets.QWidget):
         hedge_payup: int = self.payup_spin.value()
 
         # Check delta of underlying
-        underlying: InstrumentData = self.option_engine.get_instrument(vt_symbol)
+        underlying: UnderlyingData = cast(UnderlyingData, self.option_engine.get_instrument(vt_symbol))
         min_range: int = int(underlying.theo_delta * 0.6)
         if delta_range < min_range:
             msg: str = f"Delta对冲阈值({delta_range})低于对冲合约"\
@@ -823,6 +823,6 @@ class OptionRiskWidget(QtWidgets.QWidget):
         """设置成交持仓比限制"""
         self.trade_position_limit = limit
 
-    def show_warning(self, msg) -> None:
+    def show_warning(self, msg: str) -> None:
         """显示提示信息"""
         self.tray_icon.showMessage("风险提示", msg)

@@ -1,6 +1,5 @@
 from scipy import stats
 from math import log, pow, sqrt, exp
-from typing import Tuple
 
 cdf = stats.norm.cdf
 pdf = stats.norm.pdf
@@ -33,7 +32,7 @@ def calculate_price(
         return max(0, cp * (s - k))
 
     if not d1:
-        d1: float = calculate_d1(s, k, r, t, v)
+        d1 = calculate_d1(s, k, r, t, v)
     d2: float = d1 - v * sqrt(t)
 
     price: float = cp * (s * cdf(cp * d1) - k * cdf(cp * d2)) * exp(-r * t)
@@ -54,7 +53,7 @@ def calculate_delta(
         return 0
 
     if not d1:
-        d1: float = calculate_d1(s, k, r, t, v)
+        d1 = calculate_d1(s, k, r, t, v)
 
     delta: float = cp * exp(-r * t) * cdf(cp * d1)
     return delta
@@ -73,7 +72,7 @@ def calculate_gamma(
         return 0
 
     if not d1:
-        d1: float = calculate_d1(s, k, r, t, v)
+        d1 = calculate_d1(s, k, r, t, v)
 
     gamma: float = exp(-r * t) * pdf(d1) / (s * v * sqrt(t))
     return gamma
@@ -93,7 +92,7 @@ def calculate_theta(
         return 0
 
     if not d1:
-        d1: float = calculate_d1(s, k, r, t, v)
+        d1 = calculate_d1(s, k, r, t, v)
     d2: float = d1 - v * sqrt(t)
 
     theta: float = -s * exp(-r * t) * pdf(d1) * v / (2 * sqrt(t)) \
@@ -115,7 +114,7 @@ def calculate_vega(
         return 0
 
     if not d1:
-        d1: float = calculate_d1(s, k, r, t, v)
+        d1 = calculate_d1(s, k, r, t, v)
 
     vega: float = s * exp(-r * t) * pdf(d1) * sqrt(t)
     return vega
@@ -128,7 +127,7 @@ def calculate_greeks(
     t: float,
     v: float,
     cp: int
-) -> Tuple[float, float, float, float, float]:
+) -> tuple[float, float, float, float, float]:
     """Calculate option price and greeks"""
     d1: float = calculate_d1(s, k, r, t, v)
     price: float = calculate_price(s, k, r, t, v, cp, d1)
@@ -146,7 +145,7 @@ def calculate_impv(
     r: float,
     t: float,
     cp: int
-):
+) -> float:
     """Calculate option implied volatility"""
     # Check option price must be positive
     if price <= 0:
@@ -167,7 +166,7 @@ def calculate_impv(
     # Calculate implied volatility with Newton's method
     v: float = 0.01    # Initial guess of volatility
 
-    for i in range(50):
+    for _i in range(50):
         # Caculate option price and vega with current guess
         p: float = calculate_price(s, k, r, t, v, cp)
         vega: float = calculate_vega(s, k, r, t, v)
