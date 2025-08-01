@@ -177,7 +177,7 @@ class OptionManager(QtWidgets.QWidget):
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """"""
-        if self.market_monitor:
+        if hasattr(self,'market_monitor') and self.market_monitor:
             self.market_monitor.close()
             self.greeks_monitor.close()
             self.volatility_chart.close()
