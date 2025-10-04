@@ -799,8 +799,8 @@ class OptionRiskWidget(QtWidgets.QWidget):
         self.net_pos_label.setText(str(data["net_pos"]))
         self.order_count_label.setText(str(data["order_count"]))
         self.cancel_count_label.setText(str(data["cancel_count"]))
-        self.trade_position_ratio_label.setText(f"{data["trade_position_ratio"]:.2f}")
-        self.cancel_order_ratio_label.setText(f"{data["cancel_order_ratio"]:.2f}")
+        self.trade_position_ratio_label.setText(f"{data['trade_position_ratio']:.2f}")
+        self.cancel_order_ratio_label.setText(f"{data['cancel_order_ratio']:.2f}")
 
         texts: list = []
         if data["trade_position_ratio"] >= self.trade_position_limit:
