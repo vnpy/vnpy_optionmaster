@@ -177,7 +177,7 @@ def calculate_impv(
     # Check if option price meets minimum value (exercise value)
     meet = False
 
-    if cp == 1 and (price > (s - k) * exp(-r * t)):
+    if cp == 1 and (price > s - k * exp(-r * t)):
         meet = True
     elif cp == -1 and (price > k * exp(-r * t) - s):
         meet = True
