@@ -156,7 +156,7 @@ def calculate_impv(
 
     if cp == 1 and (price > (s - k) * exp(-r * t)):
         meet = True
-    elif cp == -1 and (price > k * exp(-r * t) - s):
+    elif cp == -1 and (price > (k - s) * exp(-r * t)):
         meet = True
 
     # If minimum value not met, return 0
