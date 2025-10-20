@@ -110,8 +110,8 @@ def calculate_theta(
     d2: float = d1 - v * sqrt(t)
 
     theta = -s * exp(-r * t) * pdf(d1) * v / (2 * sqrt(t)) \
-        + cp * r * s * exp(-r * t) * cdf(cp * d1) \
-        - cp * r * k * exp(-r * t) * cdf(cp * d2)
+        - cp * r * s * exp(-r * t) * cdf(cp * d1) \
+        + cp * r * k * exp(-r * t) * cdf(cp * d2)
     return theta
 
 
