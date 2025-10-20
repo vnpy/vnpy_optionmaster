@@ -37,7 +37,7 @@ def calculate_price(
 
     # Return option space value if volatility not positive
     if v <= 0:
-        return max(0, cp * (s - k))
+        return max(0, cp * (s - k)) * exp(-r * t)
 
     if not d1:
         d1 = calculate_d1(s, k, r, t, v)
