@@ -37,7 +37,7 @@ def calculate_price(
 
     # Return option space value if volatility not positive
     if v <= 0:
-        return max(0, cp * (s - k))
+        return max(0, cp * (s - k)) * exp(-r * t)
 
     if not d1:
         d1 = calculate_d1(s, k, r, t, v)
@@ -110,8 +110,8 @@ def calculate_theta(
     d2: float = d1 - v * sqrt(t)
 
     theta = -s * exp(-r * t) * pdf(d1) * v / (2 * sqrt(t)) \
-        + cp * r * s * exp(-r * t) * cdf(cp * d1) \
-        - cp * r * k * exp(-r * t) * cdf(cp * d2)
+        - cp * r * s * exp(-r * t) * cdf(cp * d1) \
+        + cp * r * k * exp(-r * t) * cdf(cp * d2)
     return theta
 
 
@@ -180,7 +180,7 @@ def calculate_impv(
 
     if cp == 1 and (price > (s - k) * exp(-r * t)):
         meet = True
-    elif cp == -1 and (price > k * exp(-r * t) - s):
+    elif cp == -1 and (price > (k - s) * exp(-r * t)):
         meet = True
 
     # If minimum value not met, return 0
