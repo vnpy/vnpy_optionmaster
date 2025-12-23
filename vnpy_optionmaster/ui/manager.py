@@ -139,12 +139,12 @@ class AlgoDirectionCombo(QtWidgets.QComboBox):
 class AlgoPricingButton(QtWidgets.QPushButton):
     """"""
 
-    def __init__(self, vt_symbol: str, manager: "ElectronicEyeManager") -> None:
+    def __init__(self, vt_symbol: str, manager: "ElectronicEyeMonitor") -> None:
         """"""
         super().__init__()
 
         self.vt_symbol: str = vt_symbol
-        self.manager: ElectronicEyeManager = manager
+        self.manager: ElectronicEyeMonitor = manager
 
         self.active: bool = False
         self.setText("N")
@@ -170,12 +170,12 @@ class AlgoPricingButton(QtWidgets.QPushButton):
 class AlgoTradingButton(QtWidgets.QPushButton):
     """"""
 
-    def __init__(self, vt_symbol: str, manager: "ElectronicEyeManager") -> None:
+    def __init__(self, vt_symbol: str, manager: "ElectronicEyeMonitor") -> None:
         """"""
         super().__init__()
 
         self.vt_symbol: str = vt_symbol
-        self.manager: ElectronicEyeManager = manager
+        self.manager: ElectronicEyeMonitor = manager
 
         self.active: bool = False
         self.setText("N")

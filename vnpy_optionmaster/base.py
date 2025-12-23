@@ -35,7 +35,7 @@ class InstrumentData:
 
         self.pricetick: float = contract.pricetick
         self.min_volume: float = contract.min_volume
-        self.size: int = contract.size
+        self.size: float = contract.size
 
         self.long_pos: int = 0
         self.short_pos: int = 0
@@ -58,20 +58,20 @@ class InstrumentData:
         """"""
         if trade.direction == Direction.LONG:
             if trade.offset == Offset.OPEN:
-                self.long_pos += trade.volume
+                self.long_pos += trade.volume       # type: ignore
             else:
-                self.short_pos -= trade.volume
+                self.short_pos -= trade.volume      # type: ignore
         else:
             if trade.offset == Offset.OPEN:
-                self.short_pos += trade.volume
+                self.short_pos += trade.volume      # type: ignore
             else:
-                self.long_pos -= trade.volume
+                self.long_pos -= trade.volume       # type: ignore
         self.calculate_net_pos()
 
     def update_holding(self, holding: PositionHolding) -> None:
         """"""
-        self.long_pos = holding.long_pos
-        self.short_pos = holding.short_pos
+        self.long_pos = holding.long_pos            # type: ignore
+        self.short_pos = holding.short_pos          # type: ignore
         self.calculate_net_pos()
 
     def set_portfolio(self, portfolio: "PortfolioData") -> None:
@@ -87,8 +87,8 @@ class OptionData(InstrumentData):
         super().__init__(contract)
 
         # Option contract features
-        self.strike_price: float = contract.option_strike
-        self.chain_index: str = contract.option_index
+        self.strike_price: float = contract.option_strike       # type: ignore
+        self.chain_index: str = contract.option_index           # type: ignore
 
         self.option_type: int = 0
         if contract.option_type == OptionType.CALL:
@@ -96,10 +96,8 @@ class OptionData(InstrumentData):
         else:
             self.option_type = -1
 
-        self.option_expiry: datetime = contract.option_expiry
-        self.days_to_expiry: int = calculate_days_to_expiry(
-            contract.option_expiry
-        )
+        self.option_expiry: datetime = contract.option_expiry                       # type: ignore
+        self.days_to_expiry: int = calculate_days_to_expiry(contract.option_expiry) # type: ignore
         self.time_to_expiry: float = self.days_to_expiry / ANNUAL_DAYS
 
         self.interest_rate: float = 0
@@ -470,11 +468,11 @@ class ChainData:
         for index, call in self.calls.items():
             put: OptionData = self.puts[index]
 
-            call_tick: TickData = call.tick
+            call_tick: TickData | None = call.tick
             if not call_tick or not call_tick.bid_price_1 or not call_tick.ask_price_1:
                 continue
 
-            put_tick: TickData = put.tick
+            put_tick: TickData | None = put.tick
             if not put_tick or not put_tick.bid_price_1 or not put_tick.ask_price_1:
                 continue
 

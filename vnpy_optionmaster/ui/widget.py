@@ -1,8 +1,10 @@
 from pathlib import Path
 from typing import cast
 
+from typing import cast
+
 from vnpy.event import EventEngine, Event
-from vnpy.trader.engine import MainEngine, BaseEngine
+from vnpy.trader.engine import MainEngine
 from vnpy.trader.ui import QtWidgets, QtCore, QtGui
 from vnpy.trader.constant import Direction, Offset, OrderType
 from vnpy.trader.object import OrderRequest, CancelRequest, ContractData, TickData
@@ -29,7 +31,7 @@ class OptionManager(QtWidgets.QWidget):
 
         self.main_engine: MainEngine = main_engine
         self.event_engine: EventEngine = event_engine
-        self.option_engine: BaseEngine = main_engine.get_engine(APP_NAME)
+        self.option_engine: OptionEngine = cast(OptionEngine, main_engine.get_engine(APP_NAME))
 
         self.portfolio_name: str = ""
 
@@ -528,7 +530,7 @@ class OptionManualTrader(QtWidgets.QWidget):
     def create_label(
         self,
         color: str = "",
-        alignment: int = QtCore.Qt.AlignmentFlag.AlignLeft
+        alignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag.AlignLeft
     ) -> QtWidgets.QLabel:
         """
         Create label with certain font color.
@@ -693,7 +695,7 @@ class OptionHedgeWidget(QtWidgets.QWidget):
                 self,
                 "无法启动自动对冲",
                 msg,
-                QtWidgets.QMessageBox.Ok
+                QtWidgets.QMessageBox.StandardButton.Ok
             )
             return
 
@@ -739,7 +741,7 @@ class OptionRiskWidget(QtWidgets.QWidget):
         self.cancel_order_limit: float = 0.9
         self.trade_position_limit: float = 99999
 
-        self.tray_icon: QtWidgets.QSystemTrayIcon = None
+        self.tray_icon: QtWidgets.QSystemTrayIcon | None = None
 
         self.init_ui()
         self.register_event()
@@ -825,4 +827,5 @@ class OptionRiskWidget(QtWidgets.QWidget):
 
     def show_warning(self, msg: str) -> None:
         """显示提示信息"""
-        self.tray_icon.showMessage("风险提示", msg)
+        if self.tray_icon:
+            self.tray_icon.showMessage("风险提示", msg)

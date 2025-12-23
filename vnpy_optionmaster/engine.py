@@ -208,7 +208,7 @@ class OptionEngine(BaseEngine):
 
     def get_portfolio(self, portfolio_name: str) -> PortfolioData:
         """"""
-        portfolio: PositionData | None = self.portfolios.get(portfolio_name, None)
+        portfolio: PortfolioData | None = self.portfolios.get(portfolio_name, None)
         if not portfolio:
             portfolio = PortfolioData(portfolio_name, self.event_engine)
             self.portfolios[portfolio_name] = portfolio
@@ -241,7 +241,7 @@ class OptionEngine(BaseEngine):
         for chain_symbol, underlying_symbol in chain_underlying_map.items():
             if "LOCAL" in underlying_symbol:
                 symbol, exchange = extract_vt_symbol(underlying_symbol)
-                contract: ContractData = ContractData(
+                contract: ContractData | None = ContractData(
                     symbol=symbol,
                     exchange=exchange,
                     name="",
@@ -252,7 +252,9 @@ class OptionEngine(BaseEngine):
                 )
             else:
                 contract = self.main_engine.get_contract(underlying_symbol)
-            portfolio.set_chain_underlying(chain_symbol, contract)
+
+            if contract:
+                portfolio.set_chain_underlying(chain_symbol, contract)
 
         portfolio.set_interest_rate(interest_rate)
 
@@ -301,9 +303,9 @@ class OptionEngine(BaseEngine):
 
         # Update position volume
         for instrument in self.instruments.values():
-            contract: ContractData = self.main_engine.get_contract(instrument.vt_symbol)
-            converter: OffsetConverter = self.main_engine.get_converter(contract.gateway_name)
-            holding: PositionHolding = converter.get_position_holding(instrument.vt_symbol)
+            contract: ContractData = self.main_engine.get_contract(instrument.vt_symbol)            # type: ignore
+            converter: OffsetConverter = self.main_engine.get_converter(contract.gateway_name)      # type: ignore
+            holding: PositionHolding = converter.get_position_holding(instrument.vt_symbol)         # type: ignore
 
             if holding:
                 instrument.update_holding(holding)
@@ -457,10 +459,9 @@ class OptionHedgeEngine:
         contract: ContractData = cast(ContractData, self.main_engine.get_contract(self.vt_symbol))
 
         converter: OffsetConverter | None = self.main_engine.get_converter(contract.gateway_name)
+        holding: PositionHolding | None = None
         if converter:
-            holding: PositionHolding = converter.get_position_holding(self.vt_symbol)
-        else:
-            holding = None
+            holding = converter.get_position_holding(self.vt_symbol)
 
         # Check if hedge volume meets contract minimum trading volume
         if abs(hedge_volume) < contract.min_volume:
@@ -759,7 +760,7 @@ class OptionRiskEngine:
         """"""
         trade: TradeData = event.data
 
-        self.trade_volume += trade.volume
+        self.trade_volume += trade.volume       # type: ignore
 
     def process_timer_event(self, event: Event) -> None:
         """"""

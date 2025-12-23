@@ -291,7 +291,7 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
                     self,
                     "无法执行情景分析",
                     f"标的物{underlying.symbol}当前中间价为{underlying.mid_price}",
-                    QtWidgets.QMessageBox.Ok
+                    QtWidgets.QMessageBox.StandardButton.Ok
                 )
                 return
 
@@ -310,11 +310,11 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
             vega_buf: list = []
 
             for price_change in price_changes:
-                portfolio_pnl = 0
-                portfolio_delta = 0.0
-                portfolio_gamma = 0
-                portfolio_theta = 0
-                portfolio_vega = 0
+                portfolio_pnl: float = 0
+                portfolio_delta: float = 0.0
+                portfolio_gamma: float = 0
+                portfolio_theta: float = 0
+                portfolio_vega: float = 0
 
                 # Calculate underlying pnl
                 for underlying in portfolio.underlyings.values():

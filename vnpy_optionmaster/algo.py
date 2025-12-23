@@ -294,11 +294,13 @@ class ElectronicEyeAlgo:
     def snipe_long(self) -> None:
         """"""
         option: OptionData = self.option
-        tick: TickData = option.tick
+        tick: TickData | None = option.tick
+        if not tick:
+            return
 
         # Calculate volume left to trade
-        pos_up_limit = self.target_pos + self.max_pos
-        volume_left = pos_up_limit - option.net_pos
+        pos_up_limit: int = self.target_pos + self.max_pos
+        volume_left: int = pos_up_limit - option.net_pos
 
         # Check price
         if volume_left > 0 and tick.ask_price_1 <= self.algo_bid_price:
@@ -308,16 +310,18 @@ class ElectronicEyeAlgo:
                 self.max_order_size
             )
 
-            self.send_long(self.algo_bid_price, volume)
+            self.send_long(self.algo_bid_price, volume)     # type: ignore
 
     def snipe_short(self) -> None:
         """"""
         option: OptionData = self.option
-        tick: TickData = option.tick
+        tick: TickData | None = option.tick
+        if not tick:
+            return
 
         # Calculate volume left to trade
-        pos_down_limit = self.target_pos - self.max_pos
-        volume_left = option.net_pos - pos_down_limit
+        pos_down_limit: int = self.target_pos - self.max_pos
+        volume_left: int = option.net_pos - pos_down_limit
 
         # Check price
         if volume_left > 0 and tick.bid_price_1 >= self.algo_ask_price:
@@ -327,7 +331,7 @@ class ElectronicEyeAlgo:
                 self.max_order_size
             )
 
-            self.send_short(self.algo_ask_price, volume)
+            self.send_short(self.algo_ask_price, volume)     # type: ignore
 
     def put_pricing_event(self) -> None:
         """"""

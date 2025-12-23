@@ -289,7 +289,10 @@ class OptionMarketMonitor(MonitorTable):
             return
 
         option: OptionData = cast(OptionData, self.option_engine.get_instrument(vt_symbol))
-        tick: TickData = option.tick
+        tick: TickData | None = option.tick
+        if not tick:
+            return
+
         option_cells["bid_price"].setText(f'{tick.bid_price_1:0.4f}')
         option_cells["bid_volume"].setText(str(tick.bid_volume_1))
         option_cells["ask_price"].setText(f'{tick.ask_price_1:0.4f}')
