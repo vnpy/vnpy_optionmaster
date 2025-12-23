@@ -159,16 +159,32 @@ def calculate_impv(
         return 0
 
     # Calculate implied volatility with Newton's method
-    v: float = abs(price / s) * 2    # Initial guess of volatility
-    v = min(max(v, 0.2), 1)          # Limit guess in range 0.2 to 1
+    # Smart initial guess based on moneyness
+    if cp == 1:
+        moneyness: float = s / k
+    else:
+        moneyness = k / s
 
-    for _i in range(50):
-        # Caculate option price and vega with current guess
+    v_base: float = (price / s) / sqrt(t) * 2.5
+
+    # Adjust based on moneyness
+    if moneyness < 0.9:
+        adjustment: float = (1 + (1 - moneyness) * 20)
+    elif moneyness > 1.15:
+        adjustment = max(0.6, 1 - (moneyness - 1) * 0.2)
+    else:
+        adjustment = 1.0
+
+    v: float = v_base * adjustment
+    v = min(max(v, 0.2), 5.0)
+
+    for _i in range(100):
+        # Calculate option price and vega with current guess
         p: float = calculate_price(s, k, r, t, v, cp)
         vega: float = calculate_vega(s, k, r, t, v)
 
         # Break loop if vega too close to 0
-        if not vega:
+        if not vega or abs(vega) < 1e-10:
             break
 
         # Calculate error value
@@ -178,10 +194,16 @@ def calculate_impv(
         if abs(dx) < 0.00001:
             break
 
-        # Calculate guessed implied volatility of next round
-        v += dx
+        # Limit step size
+        dx = max(-0.5, min(0.5, dx))
 
-    # Check end result to be non-negative
+        # Calculate guessed implied volatility of next round
+        v_new: float = v + dx
+        if v_new <= 0:
+            v_new = v * 0.5
+        v = min(v_new, 10.0)
+
+    # Final check
     if v <= 0:
         return 0
 

@@ -7,6 +7,7 @@ cdef extern from "math.h" nogil:
     double log(double)
     double erf(double)
     double fabs(double)
+    double fmax(double, double)
 
 
 cdef double cdf(double x):
@@ -168,9 +169,9 @@ def calculate_impv(
 ) -> float:
     """Calculate option implied volatility"""
     cdef bint meet
-    cdef double v, p, vega, dx
+    cdef double v, p, vega, dx, moneyness, v_base, adjustment, v_new
 
-    # Check option prive must be positive
+    # Check option price must be positive
     if price <= 0:
         return 0
 
@@ -182,29 +183,51 @@ def calculate_impv(
         return 0
 
     # Calculate implied volatility with Newton's method
-    v = abs(price / s) * 2          # Initial guess of volatility
-    v = min(max(v, 0.2), 1)         # Limit guess in range 0.2 to 1
+    # Smart initial guess based on moneyness
+    if cp == 1:
+        moneyness = s / k
+    else:
+        moneyness = k / s
 
-    for i in range(50):
-        # Caculate option price and vega with current guess
+    v_base = (price / s) / sqrt(t) * 2.5
+
+    # Adjust based on moneyness
+    if moneyness < 0.9:
+        adjustment = 1 + (1 - moneyness) * 20
+    elif moneyness > 1.15:
+        adjustment = fmax(0.6, 1 - (moneyness - 1) * 0.2)
+    else:
+        adjustment = 1.0
+
+    v = v_base * adjustment
+    v = min(max(v, 0.2), 5.0)
+
+    for i in range(100):
+        # Calculate option price and vega with current guess
         p = calculate_price(s, k, r, t, v, cp)
         vega = calculate_vega(s, k, r, t, v)
 
         # Break loop if vega too close to 0
-        if not vega:
+        if not vega or fabs(vega) < 1e-10:
             break
 
         # Calculate error value
         dx = (price - p) / vega
 
         # Check if error value meets requirement
-        if abs(dx) < 0.00001:
+        if fabs(dx) < 0.00001:
             break
 
-        # Calculate guessed implied volatility of next round
-        v += dx
+        # Limit step size
+        dx = fmax(-0.5, min(0.5, dx))
 
-    # Check end result to be non-negative
+        # Calculate guessed implied volatility of next round
+        v_new = v + dx
+        if v_new <= 0:
+            v_new = v * 0.5
+        v = min(v_new, 10.0)
+
+    # Final check
     if v <= 0:
         return 0
 
