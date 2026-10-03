@@ -4,7 +4,7 @@ from typing import cast
 
 from vnpy.trader.object import (
     LogData, ContractData, TickData,
-    OrderData, TradeData, PositionData,
+    OrderData, TradeData,
     SubscribeRequest, OrderRequest, CancelRequest
 )
 from vnpy.event import Event, EventEngine

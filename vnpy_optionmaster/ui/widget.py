@@ -1,8 +1,6 @@
 from pathlib import Path
 from typing import cast
 
-from typing import cast
-
 from vnpy.event import EventEngine, Event
 from vnpy.trader.engine import MainEngine
 from vnpy.trader.ui import QtWidgets, QtCore, QtGui
