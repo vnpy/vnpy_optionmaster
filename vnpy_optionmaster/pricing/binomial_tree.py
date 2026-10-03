@@ -1,3 +1,4 @@
+"""二叉树美式期权定价。"""
 from numpy import zeros, ndarray
 from math import exp, sqrt
 
@@ -14,7 +15,7 @@ def generate_tree(
     cp: int,
     n: int
 ) -> tuple[ndarray, ndarray]:
-    """Generate binomial tree for pricing American option."""
+    """生成用于美式期权定价的二叉树。"""
     dt: float = t / n
     u: float = exp(v * sqrt(dt))
     d: float = 1 / u
@@ -63,7 +64,7 @@ def calculate_price(
     cp: int,
     n: int = DEFAULT_STEP
 ) -> float:
-    """Calculate option price"""
+    """计算期权价格。"""
     option_tree, _ = generate_tree(f, k, r, t, v, cp, n)
     return option_tree[0, 0]                               # type: ignore
 
@@ -77,7 +78,7 @@ def calculate_delta(
     cp: int,
     n: int = DEFAULT_STEP
 ) -> float:
-    """Calculate option delta"""
+    """计算期权 Delta。"""
     option_tree, underlying_tree = generate_tree(f, k, r, t, v, cp, n)
 
     option_price_change: float = option_tree[0, 1] - option_tree[1, 1]
@@ -96,7 +97,7 @@ def calculate_gamma(
     cp: int,
     n: int = DEFAULT_STEP
 ) -> float:
-    """Calculate option gamma"""
+    """计算期权 Gamma。"""
     option_tree, underlying_tree = generate_tree(f, k, r, t, v, cp, n)
 
     gamma_delta_1: float = (option_tree[0, 2] - option_tree[1, 2]) / \
@@ -118,7 +119,7 @@ def calculate_theta(
     cp: int,
     n: int = DEFAULT_STEP
 ) -> float:
-    """Calcualte option theta"""
+    """计算期权 Theta。"""
     option_tree, _ = generate_tree(f, k, r, t, v, cp, n)
 
     dt: float = t / n
@@ -136,7 +137,7 @@ def calculate_vega(
     cp: int,
     n: int = DEFAULT_STEP
 ) -> float:
-    """Calculate option vega"""
+    """计算期权 Vega。"""
     price_1: float = calculate_price(f, k, r, t, v, cp, n)
     price_2: float = calculate_price(f, k, r, t, v * 1.001, cp, n)
     vega: float = (price_2 - price_1) / (v * 0.001)
@@ -152,7 +153,7 @@ def calculate_greeks(
     cp: int,
     n: int = DEFAULT_STEP
 ) -> tuple[float, float, float, float, float]:
-    """Calculate option price and greeks"""
+    """计算期权价格和希腊值。"""
     dt: float = t / n
     option_tree, underlying_tree = generate_tree(f, k, r, t, v, cp, n)
     option_tree_vega, _ = generate_tree(f, k, r, t, v * 1.001, cp, n)
@@ -191,7 +192,7 @@ def calculate_impv(
     cp: int,
     n: int = DEFAULT_STEP
 ) -> float:
-    """Calculate option implied volatility"""
+    """计算期权隐含波动率。"""
     # Check option price must be positive
     if price <= 0:
         return 0

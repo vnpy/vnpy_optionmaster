@@ -1,3 +1,4 @@
+"""电子眼监控和定价波动率管理界面。"""
 from copy import copy
 from functools import partial
 from typing import cast
@@ -29,10 +30,10 @@ from ..algo import ElectronicEyeAlgo
 
 
 class AlgoSpinBox(QtWidgets.QSpinBox):
-    """"""
+    """可输入正负整数的算法微调框。"""
 
     def __init__(self) -> None:
-        """"""
+        """把整数范围设为正负 999999，并使文字居中。"""
         super().__init__()
 
         self.setMaximum(999999)
@@ -40,34 +41,34 @@ class AlgoSpinBox(QtWidgets.QSpinBox):
         self.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
     def get_value(self) -> int:
-        """"""
+        """返回当前整数值。"""
         value: int = self.value()
         return value
 
     def set_value(self, value: int) -> None:
-        """"""
+        """设置当前整数值。"""
         self.setValue(value)
 
     def update_status(self, active: bool) -> None:
-        """"""
+        """活动时禁用输入。"""
         self.setEnabled(not active)
 
 
 class AlgoPositiveSpinBox(AlgoSpinBox):
-    """"""
+    """只允许非负整数的算法微调框。"""
 
     def __init__(self) -> None:
-        """"""
+        """在父类基础上把最小值改为 0。"""
         super().__init__()
 
         self.setMinimum(0)
 
 
 class AlgoDoubleSpinBox(QtWidgets.QDoubleSpinBox):
-    """"""
+    """一位小数的非负算法微调框。"""
 
     def __init__(self) -> None:
-        """"""
+        """设置一位小数、0 到 9999.9 的范围，并使文字居中。"""
         super().__init__()
 
         self.setDecimals(1)
@@ -76,24 +77,24 @@ class AlgoDoubleSpinBox(QtWidgets.QDoubleSpinBox):
         self.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
     def get_value(self) -> float:
-        """"""
+        """返回当前浮点值。"""
         value: float = self.value()
         return value
 
     def set_value(self, value: float) -> None:
-        """"""
+        """设置当前浮点值。"""
         self.setValue(value)
 
     def update_status(self, active: bool) -> None:
-        """"""
+        """活动时禁用输入。"""
         self.setEnabled(not active)
 
 
 class AlgoDirectionCombo(QtWidgets.QComboBox):
-    """"""
+    """选择双向、做多或做空的下拉框。"""
 
     def __init__(self) -> None:
-        """"""
+        """加入双向、做多和做空三个选项。"""
         super().__init__()
 
         self.addItems([
@@ -103,7 +104,7 @@ class AlgoDirectionCombo(QtWidgets.QComboBox):
         ])
 
     def get_value(self) -> dict[str, bool]:
-        """"""
+        """双向则多空都允许，做多则只允许做多，否则只允许做空。"""
         if self.currentText() == "双向":
             value: dict = {
                 "long_allowed": True,
@@ -123,7 +124,7 @@ class AlgoDirectionCombo(QtWidgets.QComboBox):
         return value
 
     def set_value(self, value: dict) -> None:
-        """"""
+        """多空都允许时选双向，只允许做多时选做多，否则选做空。"""
         if value["long_allowed"] and value["short_allowed"]:
             self.setCurrentIndex(0)
         elif value["long_allowed"]:
@@ -132,15 +133,15 @@ class AlgoDirectionCombo(QtWidgets.QComboBox):
             self.setCurrentIndex(2)
 
     def update_status(self, active: bool) -> None:
-        """"""
+        """活动时禁用选择。"""
         self.setEnabled(not active)
 
 
 class AlgoPricingButton(QtWidgets.QPushButton):
-    """"""
+    """切换单个合约定价开关的按钮。"""
 
     def __init__(self, vt_symbol: str, manager: "ElectronicEyeMonitor") -> None:
-        """"""
+        """绑定合约和监控表，初始文本为 N，并连接点击事件。"""
         super().__init__()
 
         self.vt_symbol: str = vt_symbol
@@ -151,14 +152,14 @@ class AlgoPricingButton(QtWidgets.QPushButton):
         self.clicked.connect(self.on_clicked)
 
     def on_clicked(self) -> None:
-        """"""
+        """已定价时停止定价，否则启动定价。"""
         if self.active:
             self.manager.stop_algo_pricing(self.vt_symbol)
         else:
             self.manager.start_algo_pricing(self.vt_symbol)
 
     def update_status(self, active: bool) -> None:
-        """"""
+        """按定价状态显示 Y 或 N。"""
         self.active = active
 
         if active:
@@ -168,10 +169,10 @@ class AlgoPricingButton(QtWidgets.QPushButton):
 
 
 class AlgoTradingButton(QtWidgets.QPushButton):
-    """"""
+    """切换单个合约交易开关的按钮。"""
 
     def __init__(self, vt_symbol: str, manager: "ElectronicEyeMonitor") -> None:
-        """"""
+        """绑定合约和监控表，初始文本为 N，并连接点击事件。"""
         super().__init__()
 
         self.vt_symbol: str = vt_symbol
@@ -182,14 +183,14 @@ class AlgoTradingButton(QtWidgets.QPushButton):
         self.clicked.connect(self.on_clicked)
 
     def on_clicked(self) -> None:
-        """"""
+        """已交易时停止交易，否则启动交易。"""
         if self.active:
             self.manager.stop_algo_trading(self.vt_symbol)
         else:
             self.manager.start_algo_trading(self.vt_symbol)
 
     def update_status(self, active: bool) -> None:
-        """"""
+        """按交易状态显示 Y 或 N。"""
         self.active = active
 
         if active:
@@ -199,7 +200,7 @@ class AlgoTradingButton(QtWidgets.QPushButton):
 
 
 class ElectronicEyeMonitor(QtWidgets.QTableWidget):
-    """"""
+    """电子眼行情和参数表格。"""
 
     signal_tick: QtCore.Signal = QtCore.Signal(Event)
     signal_pricing: QtCore.Signal = QtCore.Signal(Event)
@@ -229,7 +230,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
     ]
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
-        """"""
+        """绑定引擎，并初始化表格、事件和本地配置。"""
         super().__init__()
 
         self.option_engine: OptionEngine = option_engine
@@ -246,7 +247,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         self.load_setting()
 
     def init_ui(self) -> None:
-        """"""
+        """按认购在左、行权价居中、认沽在右建表，并填入净持仓和已有行情。"""
         self.setWindowTitle("电子眼")
         self.verticalHeader().setVisible(False)
         self.setEditTriggers(self.EditTrigger.NoEditTriggers)
@@ -352,7 +353,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
                 self.update_tick(tick)
 
     def load_setting(self) -> None:
-        """"""
+        """从 JSON 恢复价差、持仓范围、目标持仓、最大委托和方向。"""
         fields: list = [
             "price_spread",
             "volatility_spread",
@@ -371,7 +372,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
                     cells[field].set_value(buf[field])
 
     def save_setting(self) -> None:
-        """"""
+        """把价差、持仓范围、目标持仓、最大委托和方向写入 JSON。"""
         fields: list = [
             "price_spread",
             "volatility_spread",
@@ -391,7 +392,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         save_json(self.setting_filename, setting)
 
     def register_event(self) -> None:
-        """"""
+        """把定价、状态、行情和成交事件接到表格。"""
         self.signal_pricing.connect(self.process_pricing_event)
         self.signal_status.connect(self.process_status_event)
         self.signal_tick.connect(self.process_tick_event)
@@ -415,12 +416,12 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         )
 
     def process_tick_event(self, event: Event) -> None:
-        """"""
+        """用行情刷新对应合约的买卖价量。"""
         tick: TickData = event.data
         self.update_tick(tick)
 
     def update_tick(self, tick: TickData) -> None:
-        """"""
+        """表格中没有该合约时返回，否则刷新买卖价和买卖量。"""
         cells: dict | None = self.cells.get(tick.vt_symbol, None)
         if not cells:
             return
@@ -431,7 +432,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         cells["ask_volume"].setText(str(tick.ask_volume_1))
 
     def process_status_event(self, event: Event) -> None:
-        """"""
+        """按定价和交易是否活动，更新参数控件和开关按钮。"""
         algo: ElectronicEyeAlgo = event.data
         cells: dict = self.cells[algo.vt_symbol]
 
@@ -446,7 +447,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         cells["trading_active"].update_status(algo.trading_active)
 
     def process_pricing_event(self, event: Event) -> None:
-        """"""
+        """有参考价时显示算法买卖价、价差、理论价和定价隐波，否则清空这些格子。"""
         algo: ElectronicEyeAlgo = event.data
         cells: dict = self.cells[algo.vt_symbol]
 
@@ -464,12 +465,12 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
             cells["pricing_impv"].setText("")
 
     def process_trade_event(self, event: Event) -> None:
-        """"""
+        """成交后刷新该合约的净持仓。"""
         trade: TradeData = event.data
         self.update_net_pos(trade.vt_symbol)
 
     def update_net_pos(self, vt_symbol: str) -> None:
-        """"""
+        """表格中没有该合约时返回，否则刷新净持仓。"""
         cells: dict | None = self.cells.get(vt_symbol, None)
         if not cells:
             return
@@ -478,7 +479,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         cells["net_pos"].setText(str(option.net_pos))
 
     def start_algo_pricing(self, vt_symbol: str) -> None:
-        """"""
+        """用表格中的价格价差和隐波价差启动定价。"""
         cells: dict = self.cells[vt_symbol]
 
         params: dict = {}
@@ -488,11 +489,11 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         self.algo_engine.start_algo_pricing(vt_symbol, params)
 
     def stop_algo_pricing(self, vt_symbol: str) -> None:
-        """"""
+        """停止该合约的定价。"""
         self.algo_engine.stop_algo_pricing(vt_symbol)
 
     def start_algo_trading(self, vt_symbol: str) -> None:
-        """"""
+        """用表格中的方向、持仓范围、目标持仓和最大委托启动交易。"""
         cells: dict = self.cells[vt_symbol]
 
         params = cells["direction"].get_value()
@@ -506,17 +507,17 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         self.algo_engine.start_algo_trading(vt_symbol, params)
 
     def stop_algo_trading(self, vt_symbol: str) -> None:
-        """"""
+        """停止该合约的交易。"""
         self.algo_engine.stop_algo_trading(vt_symbol)
 
 
 class ElectronicEyeManager(QtWidgets.QWidget):
-    """"""
+    """电子眼总控、批量参数和日志窗口。"""
 
     signal_log = QtCore.Signal(Event)
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
-        """"""
+        """绑定引擎并初始化界面和日志事件。"""
         super().__init__()
 
         self.option_engine: OptionEngine = option_engine
@@ -528,7 +529,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
         self.register_event()
 
     def init_ui(self) -> None:
-        """"""
+        """搭建监控表、批量参数、停止按钮和日志区域。"""
         self.setWindowTitle("期权电子眼")
 
         self.algo_monitor: ElectronicEyeMonitor = ElectronicEyeMonitor(self.option_engine, self.portfolio_name)
@@ -605,26 +606,26 @@ class ElectronicEyeManager(QtWidgets.QWidget):
         self.setLayout(hbox)
 
     def register_event(self) -> None:
-        """"""
+        """把算法日志事件接到文本框。"""
         self.signal_log.connect(self.process_log_event)
 
         self.event_Engine.register(EVENT_OPTION_ALGO_LOG, self.signal_log.emit)
 
     def process_log_event(self, event: Event) -> None:
-        """"""
+        """把日志时间和内容追加到文本框。"""
         log: LogData = event.data
         timestr: str = log.time.strftime("%H:%M:%S")
         msg: str = f"{timestr}  {log.msg}"
         self.log_monitor.append(msg)
 
     def show(self) -> None:
-        """"""
+        """初始化算法引擎、调整列宽并最大化显示。"""
         self.algo_engine.init_engine(self.portfolio_name)
         self.algo_monitor.resizeColumnsToContents()
         super().showMaximized()
 
     def set_price_spread_for_all(self) -> None:
-        """"""
+        """把价格价差写到仍可编辑的价格价差框。"""
         price_spread: float = self.price_spread_spin.get_value()
 
         for cells in self.algo_monitor.cells.values():
@@ -632,7 +633,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
                 cells["price_spread"].setValue(price_spread)
 
     def set_volatility_spread_for_all(self) -> None:
-        """"""
+        """把隐波价差写到仍可编辑的隐波价差框。"""
         volatility_spread: float = self.volatility_spread_spin.get_value()
 
         for cells in self.algo_monitor.cells.values():
@@ -640,7 +641,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
                 cells["volatility_spread"].setValue(volatility_spread)
 
     def set_direction_for_all(self) -> None:
-        """"""
+        """把方向写到仍可编辑的方向框。"""
         ix: int = self.direction_combo.currentIndex()
 
         for cells in self.algo_monitor.cells.values():
@@ -648,7 +649,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
                 cells["direction"].setCurrentIndex(ix)
 
     def set_max_order_size_for_all(self) -> None:
-        """"""
+        """把最大委托写到仍可编辑的最大委托框。"""
         size: int = self.max_order_size_spin.get_value()
 
         for cells in self.algo_monitor.cells.values():
@@ -656,7 +657,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
                 cells["max_order_size"].setValue(size)
 
     def set_target_pos_for_all(self) -> None:
-        """"""
+        """把目标持仓写到仍可编辑的目标持仓框。"""
         pos: int = self.target_pos_spin.get_value()
 
         for cells in self.algo_monitor.cells.values():
@@ -664,7 +665,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
                 cells["target_pos"].setValue(pos)
 
     def set_max_pos_for_all(self) -> None:
-        """"""
+        """把持仓范围写到仍可编辑的持仓范围框。"""
         pos: int = self.max_pos_spin.get_value()
 
         for cells in self.algo_monitor.cells.values():
@@ -672,26 +673,26 @@ class ElectronicEyeManager(QtWidgets.QWidget):
                 cells["max_pos"].setValue(pos)
 
     def stop_pricing_for_all(self) -> None:
-        """"""
+        """停止监控表中每个合约的定价。"""
         for vt_symbol in self.algo_monitor.cells.keys():
             self.algo_monitor.stop_algo_pricing(vt_symbol)
 
     def stop_trading_for_all(self) -> None:
-        """"""
+        """停止监控表中每个合约的交易。"""
         for vt_symbol in self.algo_monitor.cells.keys():
             self.algo_monitor.stop_algo_trading(vt_symbol)
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
-        """"""
+        """关闭时保存监控表配置并接受关闭事件。"""
         self.algo_monitor.save_setting()
         event.accept()
 
 
 class VolatilityDoubleSpinBox(QtWidgets.QDoubleSpinBox):
-    """"""
+    """以百分数显示的波动率微调框。"""
 
     def __init__(self) -> None:
-        """"""
+        """设置一位小数、百分号后缀和 0 到 200 的范围。"""
         super().__init__()
 
         self.setDecimals(1)
@@ -700,18 +701,18 @@ class VolatilityDoubleSpinBox(QtWidgets.QDoubleSpinBox):
         self.setMinimum(0)
 
     def get_value(self) -> float:
-        """"""
+        """返回微调框中的数值。"""
         value: float = self.value()
         return value
 
 
 class PricingVolatilityManager(QtWidgets.QWidget):
-    """"""
+    """按期权链查看和修改定价隐含波动率的窗口。"""
 
     signal_timer: QtCore.Signal = QtCore.Signal(Event)
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
-        """"""
+        """绑定组合，并初始化各链的隐波表和定时事件。"""
         super().__init__()
 
         self.option_engine: OptionEngine = option_engine
@@ -726,7 +727,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         self.register_event()
 
     def init_ui(self) -> None:
-        """"""
+        """为每条期权链建立隐波表，以及重置、拟合和加减 0.1% 按钮。"""
         self.setWindowTitle("波动率管理")
 
         tab: QtWidgets.QTabWidget = QtWidgets.QTabWidget()
@@ -838,13 +839,13 @@ class PricingVolatilityManager(QtWidgets.QWidget):
             table.resizeRowsToContents()
 
     def register_event(self) -> None:
-        """"""
+        """注册定时事件。"""
         self.signal_timer.connect(self.process_timer_event)
 
         self.event_engine.register(EVENT_TIMER, self.signal_timer.emit)
 
     def process_timer_event(self, event: Event) -> None:
-        """"""
+        """定时刷新每条期权链的隐波显示。"""
         for chain_symbol in self.chain_symbols:
             self.update_chain_impv(chain_symbol)
 
@@ -928,7 +929,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         self.update_pricing_impv(chain_symbol)
 
     def set_pricing_impv(self, value: float, chain_symbol: str, index: str) -> None:
-        """"""
+        """把输入的百分数除以 100，写入该行权价认购和认沽的定价隐波。"""
         new_impv: float = value / 100
 
         chain: ChainData = self.portfolio.get_chain(chain_symbol)
@@ -940,7 +941,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         put.pricing_impv = new_impv
 
     def update_pricing_impv(self, chain_symbol: str) -> None:
-        """"""
+        """用虚值合约的定价隐波回填百分数；行权索引不低于平值时取认购，否则取认沽。"""
         chain: ChainData = self.portfolio.get_chain(chain_symbol)
         atm_index: str = chain.atm_index
 
@@ -958,7 +959,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
                 cells["pricing_impv"].setValue(value)
 
     def update_chain_impv(self, chain_symbol: str) -> None:
-        """"""
+        """以百分数刷新虚值、认购和认沽的中间隐波；平值行权价变化时恢复旧行颜色，并把新平值行设为黑字白底。"""
         chain: ChainData = self.portfolio.get_chain(chain_symbol)
         atm_index: str = chain.atm_index
 

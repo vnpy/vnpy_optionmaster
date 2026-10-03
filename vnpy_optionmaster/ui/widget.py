@@ -1,3 +1,4 @@
+"""期权主界面以及快速交易、对冲和风控控件。"""
 from pathlib import Path
 from typing import cast
 
@@ -20,11 +21,11 @@ from .manager import ElectronicEyeManager, PricingVolatilityManager
 
 
 class OptionManager(QtWidgets.QWidget):
-    """"""
+    """期权功能入口栏。"""
     signal_new_portfolio: QtCore.Signal = QtCore.Signal(Event)
 
     def __init__(self, main_engine: MainEngine, event_engine: EventEngine) -> None:
-        """"""
+        """取得期权引擎，并初始化入口栏和事件。"""
         super().__init__()
 
         self.main_engine: MainEngine = main_engine
@@ -47,7 +48,7 @@ class OptionManager(QtWidgets.QWidget):
         self.register_event()
 
     def init_ui(self) -> None:
-        """"""
+        """创建组合下拉框和功能按钮，功能按钮先全部禁用。"""
         self.setWindowTitle("OptionMaster")
 
         self.portfolio_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
@@ -100,17 +101,17 @@ class OptionManager(QtWidgets.QWidget):
         self.setLayout(hbox)
 
     def register_event(self) -> None:
-        """"""
+        """注册新组合事件以刷新下拉框。"""
         self.signal_new_portfolio.connect(self.process_new_portfolio_event)
 
         self.event_engine.register(EVENT_OPTION_NEW_PORTFOLIO, self.signal_new_portfolio.emit)
 
     def process_new_portfolio_event(self, event: Event) -> None:
-        """"""
+        """有新组合时刷新下拉框。"""
         self.update_portfolio_combo()
 
     def update_portfolio_combo(self) -> None:
-        """"""
+        """下拉框被禁用时返回，否则清空并重新填入组合名称。"""
         if not self.portfolio_combo.isEnabled():
             return
 
@@ -119,7 +120,7 @@ class OptionManager(QtWidgets.QWidget):
         self.portfolio_combo.addItems(portfolio_names)
 
     def open_portfolio_dialog(self) -> None:
-        """"""
+        """未选择组合时返回；配置被接受后锁定组合并创建功能窗口。"""
         portfolio_name: str = self.portfolio_combo.currentText()
         if not portfolio_name:
             return
@@ -136,7 +137,7 @@ class OptionManager(QtWidgets.QWidget):
             self.init_widgets()
 
     def init_widgets(self) -> None:
-        """"""
+        """创建各功能窗口，把报价表双击接到快速交易，并启用功能按钮。"""
         self.market_monitor = OptionMarketMonitor(self.option_engine, self.portfolio_name)
         self.greeks_monitor = OptionGreeksMonitor(self.option_engine, self.portfolio_name)
         self.volatility_chart = OptionVolatilityChart(self.option_engine, self.portfolio_name)
@@ -176,7 +177,7 @@ class OptionManager(QtWidgets.QWidget):
             button.setEnabled(True)
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
-        """"""
+        """若功能窗口已创建则全部关闭，并接受关闭事件。"""
         if hasattr(self, "market_monitor"):
             self.market_monitor.close()
             self.greeks_monitor.close()
@@ -193,10 +194,10 @@ class OptionManager(QtWidgets.QWidget):
 
 
 class PortfolioDialog(QtWidgets.QDialog):
-    """"""
+    """配置定价模型、利率、精度和各链标的的对话框。"""
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str):
-        """"""
+        """保存引擎与组合名称并初始化表单。"""
         super().__init__()
 
         self.option_engine: OptionEngine = option_engine
@@ -205,7 +206,7 @@ class PortfolioDialog(QtWidgets.QDialog):
         self.init_ui()
 
     def init_ui(self) -> None:
-        """"""
+        """用已保存配置填充定价模型、百分数年化利率、希腊值小数位，以及各链标的和本地合成标的。"""
         self.setWindowTitle(f"{self.portfolio_name}组合配置")
 
         portfolio_setting: dict = self.option_engine.get_portfolio_setting(
@@ -285,7 +286,7 @@ class PortfolioDialog(QtWidgets.QDialog):
         self.setLayout(form)
 
     def update_portfolio_setting(self) -> None:
-        """"""
+        """提交模型、折成小数的年化利率、精度和非空标的映射；组合初始化成功则接受，否则关闭。"""
         model_name: str = self.model_name_combo.currentText()
         interest_rate: float = self.interest_rate_spin.value() / 100
 
@@ -315,11 +316,11 @@ class PortfolioDialog(QtWidgets.QDialog):
 
 
 class OptionManualTrader(QtWidgets.QWidget):
-    """"""
+    """按合约快速下单并显示五档行情的窗口。"""
     signal_tick: QtCore.Signal = QtCore.Signal(TickData)
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
-        """"""
+        """绑定引擎，并初始化下单区、合约缓存和行情信号。"""
         super().__init__()
 
         self.option_engine: OptionEngine = option_engine
@@ -335,7 +336,7 @@ class OptionManualTrader(QtWidgets.QWidget):
         self.connect_signal()
 
     def init_ui(self) -> None:
-        """"""
+        """创建委托表单和五档买卖价量标签。"""
         self.setWindowTitle("期权交易")
 
         # Trading Area
@@ -446,17 +447,17 @@ class OptionManualTrader(QtWidgets.QWidget):
         self.setLayout(hbox)
 
     def init_contracts(self) -> None:
-        """"""
+        """以代码为键缓存主引擎中的全部合约。"""
         contracts: list[ContractData] = self.main_engine.get_all_contracts()
         for contract in contracts:
             self.contracts[contract.symbol] = contract
 
     def connect_signal(self) -> None:
-        """"""
+        """把内部行情信号接到盘口刷新。"""
         self.signal_tick.connect(self.update_tick)
 
     def send_order(self) -> None:
-        """"""
+        """合约不存在或价格、数量为空时返回，否则按表单发送限价单。"""
         symbol: str = self.symbol_line.text()
         contract: ContractData | None = self.contracts.get(symbol, None)
         if not contract:
@@ -485,13 +486,13 @@ class OptionManualTrader(QtWidgets.QWidget):
         self.main_engine.send_order(req, contract.gateway_name)
 
     def cancel_all(self) -> None:
-        """"""
+        """撤销主引擎中的全部活动委托。"""
         for order in self.main_engine.get_all_active_orders():
             req: CancelRequest = order.create_cancel_request()
             self.main_engine.cancel_order(req, order.gateway_name)
 
     def update_symbol(self, cell: MonitorCell) -> None:
-        """"""
+        """单元格没有合约代码时返回，否则填入代码并切换行情订阅。"""
         if not cell.vt_symbol:
             return
 
@@ -540,14 +541,14 @@ class OptionManualTrader(QtWidgets.QWidget):
         return label
 
     def process_tick_event(self, event: Event) -> None:
-        """"""
+        """只把当前合约的行情发给界面。"""
         tick: TickData = event.data
         if tick.vt_symbol != self.vt_symbol:
             return
         self.signal_tick.emit(tick)
 
     def update_tick(self, tick: TickData) -> None:
-        """"""
+        """刷新最新价和一档；有昨收时显示涨跌幅；有买二价时刷新二至五档。"""
         price_digits: int = self.price_digits
 
         self.lp_label.setText(f"{tick.last_price:.{price_digits}f}")
@@ -582,7 +583,7 @@ class OptionManualTrader(QtWidgets.QWidget):
             self.av5_label.setText(str(tick.ask_volume_5))
 
     def clear_data(self) -> None:
-        """"""
+        """把最新价、涨跌幅和五档都设为横线。"""
         self.lp_label.setText("-")
         self.return_label.setText("-")
         self.bp1_label.setText("-")
@@ -612,10 +613,10 @@ class OptionManualTrader(QtWidgets.QWidget):
 
 
 class OptionHedgeWidget(QtWidgets.QWidget):
-    """"""
+    """Delta 自动对冲参数窗口。"""
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
-        """"""
+        """绑定对冲引擎并初始化表单。"""
         super().__init__()
 
         self.option_engine: OptionEngine = option_engine
@@ -627,7 +628,7 @@ class OptionHedgeWidget(QtWidgets.QWidget):
         self.init_ui()
 
     def init_ui(self) -> None:
-        """"""
+        """列出名称不含 LOCAL 的标的，并设置执行频率、Delta 目标、阈值和超价。"""
         self.setWindowTitle("Delta对冲")
 
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
@@ -675,7 +676,7 @@ class OptionHedgeWidget(QtWidgets.QWidget):
         self.setLayout(form)
 
     def start(self) -> None:
-        """"""
+        """对冲阈值低于标的理论 delta 的 60% 取整值时弹出警告并返回，否则启动对冲并锁定参数。"""
         vt_symbol: str = self.symbol_combo.currentText()
         timer_trigger: int = self.trigger_spin.value()
         delta_target: int = self.target_spin.value()
@@ -709,13 +710,13 @@ class OptionHedgeWidget(QtWidgets.QWidget):
         self.update_widget_status(False)
 
     def stop(self) -> None:
-        """"""
+        """停止对冲并恢复参数输入。"""
         self.hedge_engine.stop()
 
         self.update_widget_status(True)
 
     def update_widget_status(self, status: bool) -> None:
-        """"""
+        """为真时启用启动和参数输入并禁用停止，为假时相反。"""
         self.start_button.setEnabled(status)
         self.symbol_combo.setEnabled(status)
         self.target_spin.setEnabled(status)
@@ -731,7 +732,7 @@ class OptionRiskWidget(QtWidgets.QWidget):
     signal: QtCore.Signal = QtCore.Signal(Event)
 
     def __init__(self, option_engine: OptionEngine) -> None:
-        """"""
+        """设置撤单委托比限额 0.9 和成交持仓比限额 99999，并初始化界面与事件。"""
         super().__init__()
 
         self.event_engine: EventEngine = option_engine.event_engine
@@ -745,7 +746,7 @@ class OptionRiskWidget(QtWidgets.QWidget):
         self.register_event()
 
     def init_ui(self) -> None:
-        """"""
+        """创建限额输入、统计标签和托盘图标。"""
         self.setWindowTitle("风险监控")
         self.resize(400, 200)
 
@@ -788,12 +789,12 @@ class OptionRiskWidget(QtWidgets.QWidget):
         self.tray_icon.setVisible(True)
 
     def register_event(self) -> None:
-        """"""
+        """把风控通知接到界面。"""
         self.signal.connect(self.process_event)
         self.event_engine.register(EVENT_OPTION_RISK_NOTICE, self.signal.emit)
 
     def process_event(self, event: Event) -> None:
-        """"""
+        """刷新各项统计；成交持仓比或撤单委托比达到限额时弹出风险提示。"""
         data = event.data
         self.trade_volume_label.setText(str(data["trade_volume"]))
         self.net_pos_label.setText(str(data["net_pos"]))

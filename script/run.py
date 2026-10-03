@@ -1,3 +1,4 @@
+"""启动带 CTP 接口和期权模块的交易程序。"""
 from vnpy.event import EventEngine
 from vnpy.trader.engine import MainEngine
 from vnpy.trader.ui import MainWindow, create_qapp

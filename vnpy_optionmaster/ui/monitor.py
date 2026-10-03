@@ -1,3 +1,4 @@
+"""期权 T 型报价、持仓希腊值和升贴水监控表。"""
 from copy import copy
 from collections import defaultdict
 from typing import cast
@@ -21,10 +22,10 @@ COLOR_GREEKS = QtGui.QColor("cyan")
 
 
 class MonitorCell(QtWidgets.QTableWidgetItem):
-    """"""
+    """居中显示的监控单元格。"""
 
     def __init__(self, text: str = "", vt_symbol: str = "") -> None:
-        """"""
+        """保存合约代码并使文字居中。"""
         super().__init__(text)
 
         self.vt_symbol: str = vt_symbol
@@ -33,10 +34,10 @@ class MonitorCell(QtWidgets.QTableWidgetItem):
 
 
 class IndexCell(MonitorCell):
-    """"""
+    """黑字白底的索引单元格。"""
 
     def __init__(self, text: str = "", vt_symbol: str = "") -> None:
-        """"""
+        """设置黑色前景和白色背景。"""
         super().__init__(text, vt_symbol)
 
         self.setForeground(COLOR_BLACK)
@@ -44,50 +45,50 @@ class IndexCell(MonitorCell):
 
 
 class BidCell(MonitorCell):
-    """"""
+    """使用买盘颜色的单元格。"""
 
     def __init__(self, text: str = "", vt_symbol: str = "") -> None:
-        """"""
+        """设置买盘前景色。"""
         super().__init__(text, vt_symbol)
 
         self.setForeground(COLOR_BID)
 
 
 class AskCell(MonitorCell):
-    """"""
+    """使用卖盘颜色的单元格。"""
 
     def __init__(self, text: str = "", vt_symbol: str = "") -> None:
-        """"""
+        """设置卖盘前景色。"""
         super().__init__(text, vt_symbol)
 
         self.setForeground(COLOR_ASK)
 
 
 class PosCell(MonitorCell):
-    """"""
+    """使用持仓颜色的单元格。"""
 
     def __init__(self, text: str = "", vt_symbol: str = "") -> None:
-        """"""
+        """设置持仓前景色。"""
         super().__init__(text, vt_symbol)
 
         self.setForeground(COLOR_POS)
 
 
 class GreeksCell(MonitorCell):
-    """"""
+    """使用希腊值颜色的单元格。"""
 
     def __init__(self, text: str = "", vt_symbol: str = "") -> None:
-        """"""
+        """设置希腊值前景色。"""
         super().__init__(text, vt_symbol)
 
         self.setForeground(COLOR_GREEKS)
 
 
 class MonitorTable(QtWidgets.QTableWidget):
-    """"""
+    """带右键菜单的监控表。"""
 
     def __init__(self) -> None:
-        """"""
+        """初始化表格并创建右键菜单。"""
         super().__init__()
 
         self.init_menu()
@@ -110,7 +111,7 @@ class MonitorTable(QtWidgets.QTableWidget):
 
 
 class OptionMarketMonitor(MonitorTable):
-    """"""
+    """认购在左、认沽在右的 T 型报价表。"""
     signal_tick: QtCore.Signal = QtCore.Signal(Event)
     signal_trade: QtCore.Signal = QtCore.Signal(Event)
     signal_position: QtCore.Signal = QtCore.Signal(Event)
@@ -133,7 +134,7 @@ class OptionMarketMonitor(MonitorTable):
     ]
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
-        """"""
+        """绑定引擎，记录期权和标的映射，并初始化报价表和事件。"""
         super().__init__()
 
         self.option_engine: OptionEngine = option_engine
@@ -148,7 +149,7 @@ class OptionMarketMonitor(MonitorTable):
         self.register_event()
 
     def init_ui(self) -> None:
-        """"""
+        """按期权链搭建 T 型报价，希腊值小数位取组合精度。"""
         self.setWindowTitle("T型报价")
         self.verticalHeader().setVisible(False)
         self.setEditTriggers(self.EditTrigger.NoEditTriggers)
@@ -239,7 +240,7 @@ class OptionMarketMonitor(MonitorTable):
             current_row += 1
 
     def register_event(self) -> None:
-        """"""
+        """注册行情、成交和持仓事件。"""
         self.signal_tick.connect(self.process_tick_event)
         self.signal_trade.connect(self.process_trade_event)
         self.signal_position.connect(self.process_position_event)
@@ -249,7 +250,7 @@ class OptionMarketMonitor(MonitorTable):
         self.event_engine.register(EVENT_POSITION, self.signal_position.emit)
 
     def process_tick_event(self, event: Event) -> None:
-        """"""
+        """期权行情刷新价格、隐波和希腊值；标的行情只刷新其期权的隐波和希腊值。"""
         tick: TickData = event.data
 
         if tick.vt_symbol in self.option_symbols:
@@ -264,17 +265,17 @@ class OptionMarketMonitor(MonitorTable):
                 self.update_greeks(vt_symbol)
 
     def process_trade_event(self, event: Event) -> None:
-        """"""
+        """成交后刷新该合约的净持仓。"""
         trade: TradeData = event.data
         self.update_pos(trade.vt_symbol)
 
     def process_position_event(self, event: Event) -> None:
-        """"""
+        """持仓事件后刷新该合约的净持仓。"""
         position: PositionData = event.data
         self.update_pos(position.vt_symbol)
 
     def update_pos(self, vt_symbol: str) -> None:
-        """"""
+        """表格中没有该合约时返回，否则刷新净持仓。"""
         option_cells: dict | None = self.cells.get(vt_symbol, None)
         if not option_cells:
             return
@@ -283,7 +284,7 @@ class OptionMarketMonitor(MonitorTable):
         option_cells["net_pos"].setText(str(option.net_pos))
 
     def update_price(self, vt_symbol: str) -> None:
-        """"""
+        """没有单元格或行情时返回，否则按四位小数刷新买卖价，并刷新买卖量、成交量和持仓量。"""
         option_cells: dict | None = self.cells.get(vt_symbol, None)
         if not option_cells:
             return
@@ -301,7 +302,7 @@ class OptionMarketMonitor(MonitorTable):
         option_cells["open_interest"].setText(str(tick.open_interest))
 
     def update_impv(self, vt_symbol: str) -> None:
-        """"""
+        """没有单元格时返回，否则把买卖隐含波动率乘 100 后保留两位小数。"""
         option_cells: dict | None = self.cells.get(vt_symbol, None)
         if not option_cells:
             return
@@ -311,7 +312,7 @@ class OptionMarketMonitor(MonitorTable):
         option_cells["ask_impv"].setText(f"{option.ask_impv * 100:.2f}")
 
     def update_greeks(self, vt_symbol: str) -> None:
-        """"""
+        """没有单元格时返回，否则按组合的小数位刷新理论希腊值。"""
         option_cells: dict | None = self.cells.get(vt_symbol, None)
         if not option_cells:
             return
@@ -325,7 +326,7 @@ class OptionMarketMonitor(MonitorTable):
 
 
 class OptionGreeksMonitor(MonitorTable):
-    """"""
+    """组合、标的、期权链和期权的持仓希腊值表。"""
     signal_tick: QtCore.Signal = QtCore.Signal(Event)
     signal_trade: QtCore.Signal = QtCore.Signal(Event)
     signal_position: QtCore.Signal = QtCore.Signal(Event)
@@ -343,7 +344,7 @@ class OptionGreeksMonitor(MonitorTable):
     ROW_DATA = OptionData | UnderlyingData | ChainData | PortfolioData
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
-        """"""
+        """绑定引擎，记录期权和标的映射，并初始化希腊值表和事件。"""
         super().__init__()
 
         self.option_engine: OptionEngine = option_engine
@@ -358,7 +359,7 @@ class OptionGreeksMonitor(MonitorTable):
         self.register_event()
 
     def init_ui(self) -> None:
-        """"""
+        """按组合、标的、期权链和期权建表，除组合行外先全部隐藏。"""
         self.setWindowTitle("希腊值风险")
         self.verticalHeader().setVisible(False)
         self.setEditTriggers(self.EditTrigger.NoEditTriggers)
@@ -438,7 +439,7 @@ class OptionGreeksMonitor(MonitorTable):
         self.resizeColumnToContents(0)
 
     def register_event(self) -> None:
-        """"""
+        """注册行情、成交和持仓事件。"""
         self.signal_tick.connect(self.process_tick_event)
         self.signal_trade.connect(self.process_trade_event)
         self.signal_position.connect(self.process_position_event)
@@ -448,7 +449,7 @@ class OptionGreeksMonitor(MonitorTable):
         self.event_engine.register(EVENT_POSITION, self.signal_position.emit)
 
     def process_tick_event(self, event: Event) -> None:
-        """"""
+        """仅在标的行情到达时刷新该标的、其期权链、期权和组合。"""
         tick: TickData = event.data
 
         if tick.vt_symbol not in self.underlying_option_map:
@@ -457,7 +458,7 @@ class OptionGreeksMonitor(MonitorTable):
         self.update_underlying_tick(tick.vt_symbol)
 
     def process_trade_event(self, event: Event) -> None:
-        """"""
+        """期权成交后刷新持仓希腊值。"""
         trade: TradeData = event.data
         if trade.vt_symbol not in self.option_symbols:
             return
@@ -465,7 +466,7 @@ class OptionGreeksMonitor(MonitorTable):
         self.update_pos(trade.vt_symbol)
 
     def process_position_event(self, event: Event) -> None:
-        """"""
+        """期权持仓变化后刷新持仓希腊值。"""
         position: PositionData = event.data
         if position.vt_symbol not in self.option_symbols:
             return
@@ -473,7 +474,7 @@ class OptionGreeksMonitor(MonitorTable):
         self.update_pos(position.vt_symbol)
 
     def update_underlying_tick(self, vt_symbol: str) -> None:
-        """"""
+        """刷新该标的、其每条期权链和期权，以及所属组合。"""
         underlying: UnderlyingData = cast(UnderlyingData, self.option_engine.get_instrument(vt_symbol))
         self.update_row(vt_symbol, "标的", underlying)
 
@@ -487,7 +488,7 @@ class OptionGreeksMonitor(MonitorTable):
         self.update_row(portfolio.name, "组合", portfolio)
 
     def update_pos(self, vt_symbol: str) -> None:
-        """"""
+        """刷新该合约所在行；若是期权再刷新期权链，最后刷新组合。"""
         instrument: InstrumentData = cast(InstrumentData, self.option_engine.get_instrument(vt_symbol))
         if isinstance(instrument, OptionData):
             self.update_row(vt_symbol, "期权", instrument)
@@ -504,7 +505,7 @@ class OptionGreeksMonitor(MonitorTable):
         self.update_row(portfolio.name, "组合", portfolio)
 
     def update_row(self, row_name: str, type_name: str, row_data: ROW_DATA) -> None:
-        """"""
+        """多空都为 0 时隐藏该行（组合行除外）并返回，否则显示仓位和希腊值；标的不写 gamma、theta 和 vega。"""
         row_key: tuple = (row_name, type_name)
         row_cells: dict = self.cells[row_key]
         row: int = self.row(row_cells["long_pos"])
@@ -529,11 +530,11 @@ class OptionGreeksMonitor(MonitorTable):
 
 
 class OptionChainMonitor(MonitorTable):
-    """"""
+    """显示期权链剩余交易日、标的和升贴水的表。"""
     signal_timer: QtCore.Signal = QtCore.Signal(Event)
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str):
-        """"""
+        """绑定引擎并初始化期权链表和定时事件。"""
         super().__init__()
 
         self.option_engine: OptionEngine = option_engine
@@ -546,7 +547,7 @@ class OptionChainMonitor(MonitorTable):
         self.register_event()
 
     def init_ui(self) -> None:
-        """"""
+        """填入期权链代码和剩余交易日，并预留标的与升贴水单元格。"""
         self.setWindowTitle("期权链跟踪")
         self.verticalHeader().setVisible(False)
         self.setEditTriggers(self.EditTrigger.NoEditTriggers)
@@ -585,13 +586,13 @@ class OptionChainMonitor(MonitorTable):
         horizontal_header.setSectionResizeMode(horizontal_header.ResizeMode.Stretch)
 
     def register_event(self) -> None:
-        """"""
+        """注册定时事件。"""
         self.signal_timer.connect(self.process_timer_event)
 
         self.event_engine.register(EVENT_TIMER, self.signal_timer.emit)
 
     def process_timer_event(self, event: Event) -> None:
-        """"""
+        """定时刷新每条期权链的标的代码和升贴水；调整量为无穷大时跳过，没有最小变动价位时升贴水写 0。"""
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
 
         for chain in portfolio.chains.values():

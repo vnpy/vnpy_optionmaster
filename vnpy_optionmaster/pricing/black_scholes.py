@@ -1,3 +1,4 @@
+"""Black-Scholes 期权定价。"""
 from scipy import stats
 from math import log, pow, sqrt, exp
 
@@ -12,7 +13,7 @@ def calculate_d1(
     t: float,
     v: float
 ) -> float:
-    """Calculate option D1 value"""
+    """计算期权 D1。"""
     d1: float = (log(s / k) + (r + 0.5 * pow(v, 2)) * t) / (v * sqrt(t))
     return d1
 
@@ -26,7 +27,7 @@ def calculate_price(
     cp: int,
     d1: float = 0.0
 ) -> float:
-    """Calculate option price"""
+    """计算期权价格。"""
     # Return option space value if volatility not positive
     if v <= 0:
         return max(0, cp * (s - k * exp(-r * t)))
@@ -48,7 +49,7 @@ def calculate_delta(
     cp: int,
     d1: float = 0.0
 ) -> float:
-    """Calculate option delta"""
+    """计算期权 Delta。"""
     if v <= 0:
         return 0
 
@@ -67,7 +68,7 @@ def calculate_gamma(
     v: float,
     d1: float = 0.0
 ) -> float:
-    """Calculate option gamma"""
+    """计算期权 Gamma。"""
     if v <= 0:
         return 0
 
@@ -88,7 +89,7 @@ def calculate_theta(
     d1: float = 0.0,
     annual_days: int = 240
 ) -> float:
-    """Calculate option theta"""
+    """计算期权 Theta。"""
     if v <= 0:
         return 0
 
@@ -109,7 +110,7 @@ def calculate_vega(
     v: float,
     d1: float = 0.0
 ) -> float:
-    """Calculate option vega"""
+    """计算期权 Vega。"""
     if v <= 0:
         return 0
 
@@ -128,7 +129,7 @@ def calculate_greeks(
     v: float,
     cp: int
 ) -> tuple[float, float, float, float, float]:
-    """Calculate option price and greeks"""
+    """计算期权价格和希腊值。"""
     d1: float = calculate_d1(s, k, r, t, v)
     price: float = calculate_price(s, k, r, t, v, cp, d1)
     delta: float = calculate_delta(s, k, r, t, v, cp, d1)
@@ -146,7 +147,7 @@ def calculate_impv(
     t: float,
     cp: int
 ) -> float:
-    """Calculate option implied volatility"""
+    """计算期权隐含波动率。"""
     # Check option price must be positive
     if price <= 0:
         return 0

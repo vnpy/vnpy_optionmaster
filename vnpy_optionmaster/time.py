@@ -1,3 +1,4 @@
+"""按上交所日历计算期权剩余交易日。"""
 from datetime import datetime, timedelta
 import exchange_calendars
 
@@ -14,7 +15,7 @@ PUBLIC_HOLIDAYS = [x for x in holidays if x >= start]
 
 
 def calculate_days_to_expiry(option_expiry: datetime) -> int:
-    """"""
+    """从当天零点起向后逐日走到到期日，周末和上交所休市日不计数，返回计数（初值为 1）。"""
     current_dt: datetime = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     days: int = 1
 

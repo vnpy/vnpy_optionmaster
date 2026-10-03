@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 
+"""期权交易应用入口。"""
 from pathlib import Path
 from vnpy.trader.app import BaseApp
 from .engine import OptionEngine, APP_NAME
@@ -38,7 +39,7 @@ __version__ = "1.3.0"
 
 
 class OptionMasterApp(BaseApp):
-    """"""
+    """声明期权交易应用的引擎、界面和显示名。"""
     app_name: str = APP_NAME
     app_module: str = __module__
     app_path: Path = Path(__file__).parent

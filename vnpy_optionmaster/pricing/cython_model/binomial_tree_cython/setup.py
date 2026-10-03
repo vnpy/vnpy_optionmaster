@@ -1,3 +1,4 @@
+"""编译二叉树定价的 Cython 扩展。"""
 from distutils.core import setup
 from Cython.Build import cythonize
 import numpy

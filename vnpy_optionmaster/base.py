@@ -1,3 +1,4 @@
+"""期权组合、期权链、标的和期权合约数据。"""
 from datetime import datetime
 from collections.abc import Callable
 from types import ModuleType
@@ -25,10 +26,10 @@ EVENT_OPTION_RISK_NOTICE = "eOptionRiskNotice"
 
 
 class InstrumentData:
-    """"""
+    """保存合约代码、行情和多空持仓的数据。"""
 
     def __init__(self, contract: ContractData) -> None:
-        """"""
+        """从合约复制代码、最小变动、最小数量和合约乘数，并初始化持仓与中间价。"""
         self.symbol: str = contract.symbol
         self.exchange: Exchange = contract.exchange
         self.vt_symbol: str = contract.vt_symbol
@@ -46,16 +47,16 @@ class InstrumentData:
         self.portfolio: PortfolioData
 
     def calculate_net_pos(self) -> None:
-        """"""
+        """用多仓减去空仓更新净持仓。"""
         self.net_pos = self.long_pos - self.short_pos
 
     def update_tick(self, tick: TickData) -> None:
-        """"""
+        """保存行情，并用买一价和卖一价的平均值作为中间价。"""
         self.tick = tick
         self.mid_price = (tick.bid_price_1 + tick.ask_price_1) / 2
 
     def update_trade(self, trade: TradeData) -> None:
-        """"""
+        """多头开仓增加多仓，多头平仓减少空仓，空头开仓增加空仓，空头平仓减少多仓，然后重算净持仓。"""
         if trade.direction == Direction.LONG:
             if trade.offset == Offset.OPEN:
                 self.long_pos += trade.volume       # type: ignore
@@ -69,21 +70,21 @@ class InstrumentData:
         self.calculate_net_pos()
 
     def update_holding(self, holding: PositionHolding) -> None:
-        """"""
+        """用持仓换算器的多仓和空仓覆盖本地持仓，并重算净持仓。"""
         self.long_pos = holding.long_pos            # type: ignore
         self.short_pos = holding.short_pos          # type: ignore
         self.calculate_net_pos()
 
     def set_portfolio(self, portfolio: "PortfolioData") -> None:
-        """"""
+        """设置所属组合。"""
         self.portfolio = portfolio
 
 
 class OptionData(InstrumentData):
-    """"""
+    """在合约数据上增加隐含波动率、定价和希腊值的期权。"""
 
     def __init__(self, contract: ContractData) -> None:
-        """"""
+        """初始化行权价、认购认沽方向、到期时间和定价字段。"""
         super().__init__(contract)
 
         # Option contract features
@@ -131,7 +132,7 @@ class OptionData(InstrumentData):
         self.pos_vega: float = 0
 
     def calculate_option_impv(self) -> None:
-        """"""
+        """缺少行情、标的或标的中间价时返回，否则用标的中间价加调整量计算买价、卖价和中间价的隐含波动率。"""
         if not self.tick or not self.underlying:
             return
 
@@ -180,7 +181,7 @@ class OptionData(InstrumentData):
         )
 
     def calculate_theo_greeks(self) -> None:
-        """"""
+        """缺少标的、标的中间价或中间隐含波动率时返回，否则计算理论希腊值，delta 与 gamma 乘合约乘数，theta 再除以 240，vega 再除以 100。"""
         if not self.underlying:
             return
 
@@ -204,7 +205,7 @@ class OptionData(InstrumentData):
         self.theo_vega = vega * self.size / 100
 
     def calculate_pos_greeks(self) -> None:
-        """"""
+        """有行情时用最新价乘合约乘数和净持仓得到持仓市值，并把理论希腊值乘净持仓。"""
         if self.tick:
             self.pos_value = self.tick.last_price * self.size * self.net_pos
 
@@ -214,7 +215,7 @@ class OptionData(InstrumentData):
         self.pos_vega = self.theo_vega * self.net_pos
 
     def calculate_ref_price(self) -> float:
-        """"""
+        """用标的中间价加调整量和定价隐含波动率计算参考价。"""
         underlying_price: float = self.underlying.mid_price
         underlying_price += self.underlying_adjustment
 
@@ -230,18 +231,18 @@ class OptionData(InstrumentData):
         return ref_price
 
     def update_tick(self, tick: TickData) -> None:
-        """"""
+        """更新行情后重算隐含波动率。"""
         super().update_tick(tick)
 
         self.calculate_option_impv()
 
     def update_trade(self, trade: TradeData) -> None:
-        """"""
+        """更新成交后重算持仓希腊值。"""
         super().update_trade(trade)
         self.calculate_pos_greeks()
 
     def update_underlying_tick(self, underlying_adjustment: float) -> None:
-        """"""
+        """记下标的调整量，并重算隐含波动率、理论希腊值和持仓希腊值。"""
         self.underlying_adjustment = underlying_adjustment
 
         self.calculate_option_impv()
@@ -249,29 +250,29 @@ class OptionData(InstrumentData):
         self.calculate_pos_greeks()
 
     def set_chain(self, chain: "ChainData") -> None:
-        """"""
+        """设置所属期权链。"""
         self.chain = chain
 
     def set_underlying(self, underlying: "UnderlyingData") -> None:
-        """"""
+        """设置标的合约。"""
         self.underlying = underlying
 
     def set_interest_rate(self, interest_rate: float) -> None:
-        """"""
+        """设置利率。"""
         self.interest_rate = interest_rate
 
     def set_pricing_model(self, pricing_model: ModuleType) -> None:
-        """"""
+        """绑定定价模型的希腊值、隐含波动率和价格函数。"""
         self.calculate_greeks = pricing_model.calculate_greeks
         self.calculate_impv = pricing_model.calculate_impv
         self.calculate_price = pricing_model.calculate_price
 
 
 class UnderlyingData(InstrumentData):
-    """"""
+    """带理论 delta 和期权链的标的数据。"""
 
     def __init__(self, contract: ContractData) -> None:
-        """"""
+        """初始化标的，理论 delta 取合约乘数。"""
         super().__init__(contract)
 
         self.theo_delta: float = self.size                  # 标的物理论Delta固定为1
@@ -279,11 +280,11 @@ class UnderlyingData(InstrumentData):
         self.chains: dict[str, ChainData] = {}
 
     def add_chain(self, chain: "ChainData") -> None:
-        """"""
+        """按链代码登记期权链。"""
         self.chains[chain.chain_symbol] = chain
 
     def update_tick(self, tick: TickData) -> None:
-        """"""
+        """更新标的行情，通知各期权链，并重算持仓 delta。"""
         super().update_tick(tick)
 
         for chain in self.chains.values():
@@ -292,21 +293,21 @@ class UnderlyingData(InstrumentData):
         self.calculate_pos_greeks()
 
     def update_trade(self, trade: TradeData) -> None:
-        """"""
+        """更新标的成交后重算持仓 delta。"""
         super().update_trade(trade)
 
         self.calculate_pos_greeks()
 
     def calculate_pos_greeks(self) -> None:
-        """"""
+        """用理论 delta 乘净持仓更新持仓 delta。"""
         self.pos_delta = self.theo_delta * self.net_pos
 
 
 class ChainData:
-    """"""
+    """同一标的月份的认购和认沽组成的期权链。"""
 
     def __init__(self, chain_symbol: str, event_engine: EventEngine) -> None:
-        """"""
+        """初始化期权链的持仓、希腊值、合约容器和平值字段。"""
         self.chain_symbol: str = chain_symbol
         self.event_engine: EventEngine = event_engine
 
@@ -337,7 +338,7 @@ class ChainData:
         self.use_synthetic: bool = False
 
     def add_option(self, option: OptionData) -> None:
-        """"""
+        """登记期权并按行权索引排序，认购和认沽分开存放，剩余交易日改为该期权的剩余交易日。"""
         self.options[option.vt_symbol] = option
 
         if option.option_type > 0:
@@ -360,7 +361,7 @@ class ChainData:
         self.days_to_expiry = option.days_to_expiry
 
     def calculate_pos_greeks(self) -> None:
-        """"""
+        """先清零，再汇总净持仓非零的期权仓位和希腊值。"""
         # Clear data
         self.long_pos = 0
         self.short_pos = 0
@@ -385,7 +386,7 @@ class ChainData:
         self.net_pos = self.long_pos - self.short_pos
 
     def update_tick(self, tick: TickData) -> None:
-        """"""
+        """更新该期权行情；合成标的尚无平值时先计算平值，平值期权再刷新合成价。"""
         option: OptionData = self.options[tick.vt_symbol]
         option.update_tick(tick)
 
@@ -397,7 +398,7 @@ class ChainData:
                 self.update_synthetic_price()
 
     def update_underlying_tick(self) -> None:
-        """"""
+        """非合成标的时重算调整量，然后用该调整量更新链上全部期权并重算持仓希腊值。"""
         if not self.use_synthetic:
             self.calculate_underlying_adjustment()
 
@@ -407,7 +408,7 @@ class ChainData:
         self.calculate_pos_greeks()
 
     def update_trade(self, trade: TradeData) -> None:
-        """"""
+        """先扣掉该期权的旧仓位和希腊值，更新成交后再加回新值。"""
         option: OptionData = self.options[trade.vt_symbol]
 
         # Deduct old option pos greeks
@@ -434,7 +435,7 @@ class ChainData:
         self.net_pos = self.long_pos - self.short_pos
 
     def set_underlying(self, underlying: "UnderlyingData") -> None:
-        """"""
+        """绑定标的并写到链上每个期权；标的交易所为本地时改为使用合成期货。"""
         underlying.add_chain(self)
         self.underlying = underlying
 
@@ -445,22 +446,22 @@ class ChainData:
             self.use_synthetic = True
 
     def set_interest_rate(self, interest_rate: float) -> None:
-        """"""
+        """把利率写到链上每个期权。"""
         for option in self.options.values():
             option.set_interest_rate(interest_rate)
 
     def set_pricing_model(self, pricing_model: ModuleType) -> None:
-        """"""
+        """把定价模型写到链上每个期权。"""
         for option in self.options.values():
             option.set_pricing_model(pricing_model)
 
     def set_portfolio(self, portfolio: "PortfolioData") -> None:
-        """"""
+        """把组合写到链上每个期权。"""
         for option in self.options.values():
             option.set_portfolio(portfolio)
 
     def calculate_atm_price(self) -> None:
-        """"""
+        """在买卖价齐全的行权价中，取认购与认沽中间价相差最小者作为平值。"""
         min_diff: float = 0
         atm_price: float = 0
         atm_index: str = ""
@@ -490,7 +491,7 @@ class ChainData:
         self.atm_index = atm_index
 
     def calculate_underlying_adjustment(self) -> None:
-        """"""
+        """没有平值价格时返回，否则用平值认购中间价减认沽中间价加行权价，再减去标的中间价。"""
         if not self.atm_price:
             return
 
@@ -504,7 +505,7 @@ class ChainData:
         self.underlying_adjustment = synthetic_price - self.underlying.mid_price
 
     def update_synthetic_price(self) -> None:
-        """"""
+        """用平值认购中间价减认沽中间价加行权价更新标的中间价，更新链上期权并推送合成行情。"""
         call: OptionData = self.calls[self.atm_index]
         put: OptionData = self.puts[self.atm_index]
 
@@ -526,9 +527,10 @@ class ChainData:
 
 
 class PortfolioData:
+    """管理期权、期权链和标的的组合数据。"""
 
     def __init__(self, name: str, event_engine: EventEngine) -> None:
-        """"""
+        """初始化组合名称、持仓、希腊值精度，以及全部合约和活跃合约容器。"""
         self.name: str = name
         self.event_engine: EventEngine = event_engine
 
@@ -554,7 +556,7 @@ class PortfolioData:
         self.precision: int = 0
 
     def calculate_pos_greeks(self) -> None:
-        """"""
+        """汇总标的的持仓 delta，以及各活跃期权链的仓位和希腊值。"""
         self.long_pos = 0
         self.short_pos = 0
         self.net_pos = 0
@@ -580,7 +582,7 @@ class PortfolioData:
         self.net_pos = self.long_pos - self.short_pos
 
     def update_tick(self, tick: TickData) -> None:
-        """"""
+        """活跃期权的行情交给其所在链，活跃标的的行情交给标的，然后重算组合希腊值。"""
         if tick.vt_symbol in self.options:
             option: OptionData = self.options[tick.vt_symbol]
             chain: ChainData = option.chain
@@ -592,7 +594,7 @@ class PortfolioData:
             self.calculate_pos_greeks()
 
     def update_trade(self, trade: TradeData) -> None:
-        """"""
+        """活跃期权的成交交给其所在链，活跃标的的成交交给标的，然后重算组合希腊值。"""
         if trade.vt_symbol in self.options:
             option: OptionData = self.options[trade.vt_symbol]
             chain: ChainData = option.chain
@@ -604,21 +606,21 @@ class PortfolioData:
             self.calculate_pos_greeks()
 
     def set_interest_rate(self, interest_rate: float) -> None:
-        """"""
+        """把利率写到每条活跃期权链。"""
         for chain in self.chains.values():
             chain.set_interest_rate(interest_rate)
 
     def set_pricing_model(self, pricing_model: ModuleType) -> None:
-        """"""
+        """把定价模型写到每条活跃期权链。"""
         for chain in self.chains.values():
             chain.set_pricing_model(pricing_model)
 
     def set_precision(self, precision: int) -> None:
-        """"""
+        """设置希腊值小数位数。"""
         self.precision = precision
 
     def set_chain_underlying(self, chain_symbol: str, contract: ContractData) -> None:
-        """"""
+        """创建或复用标的并绑定到期权链，再把该链及其期权标为活跃。"""
         underlying: UnderlyingData | None = self.underlyings.get(contract.vt_symbol, None)
         if not underlying:
             underlying = UnderlyingData(contract)
@@ -635,7 +637,7 @@ class PortfolioData:
             self.options[option.vt_symbol] = option
 
     def get_chain(self, chain_symbol: str) -> ChainData:
-        """"""
+        """按代码获取期权链，没有则创建并记入全部链。"""
         chain: ChainData | None = self._chains.get(chain_symbol, None)
 
         if not chain:
@@ -646,7 +648,7 @@ class PortfolioData:
         return chain
 
     def add_option(self, contract: ContractData) -> None:
-        """"""
+        """按期权标的和交易所创建期权，并加入对应期权链。"""
         option: OptionData = OptionData(contract)
         option.set_portfolio(self)
         self._options[contract.vt_symbol] = option
@@ -658,7 +660,7 @@ class PortfolioData:
         chain.add_option(option)
 
     def calculate_atm_price(self) -> None:
-        """"""
+        """让每条活跃期权链重算平值价格。"""
         for chain in self.chains.values():
             chain.calculate_atm_price()
 

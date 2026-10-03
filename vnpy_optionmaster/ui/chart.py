@@ -1,3 +1,4 @@
+"""隐含波动率曲线和情景分析图。"""
 import pyqtgraph as pg
 from typing import cast
 
@@ -23,11 +24,12 @@ mpl.rcParams['axes.unicode_minus'] = False
 
 
 class OptionVolatilityChart(QtWidgets.QWidget):
+    """按期权链绘制看涨、看跌和定价隐波曲线。"""
 
     signal_timer: QtCore.Signal = QtCore.Signal(Event)
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
-        """"""
+        """绑定引擎，初始化曲线颜色和定时计数，并创建界面、注册事件。"""
         super().__init__()
 
         self.option_engine: OptionEngine = option_engine
@@ -58,7 +60,7 @@ class OptionVolatilityChart(QtWidgets.QWidget):
         self.register_event()
 
     def init_ui(self) -> None:
-        """"""
+        """为每条期权链添加复选框，并创建隐含波动率曲线图。"""
         self.setWindowTitle("波动率曲线")
 
         # Create checkbox for each chain
@@ -103,13 +105,13 @@ class OptionVolatilityChart(QtWidgets.QWidget):
         self.setLayout(vbox)
 
     def register_event(self) -> None:
-        """"""
+        """注册定时事件。"""
         self.signal_timer.connect(self.process_timer_event)
 
         self.event_engine.register(EVENT_TIMER, self.signal_timer.emit)
 
     def process_timer_event(self, event: Event) -> None:
-        """"""
+        """计数达到触发间隔后把触发间隔设为 0，并刷新曲线数据。"""
         self.timer_count += 1
         if self.timer_count < self.timer_trigger:
             return
@@ -118,7 +120,7 @@ class OptionVolatilityChart(QtWidgets.QWidget):
         self.update_curve_data()
 
     def add_impv_curve(self, chain_symbol: str) -> None:
-        """"""
+        """取下一种颜色，为该期权链添加看涨、看跌和定价三条曲线。"""
         symbol_size: int = 14
         symbol: str = chain_symbol.split(".")[0]
         color: tuple = self.colors.pop(0)
@@ -147,7 +149,7 @@ class OptionVolatilityChart(QtWidgets.QWidget):
         )
 
     def update_curve_data(self) -> None:
-        """"""
+        """按行权价刷新各链看涨中间隐波、看跌中间隐波和定价隐波的百分数。"""
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
 
         for chain in portfolio.chains.values():
@@ -179,7 +181,7 @@ class OptionVolatilityChart(QtWidgets.QWidget):
             )
 
     def update_curve_visible(self) -> None:
-        """"""
+        """清空图表后，只加回已勾选期权链的曲线。"""
         self.impv_chart.clear()
 
         for chain_symbol, checkbox in self.chain_checks.items():
@@ -194,10 +196,10 @@ class OptionVolatilityChart(QtWidgets.QWidget):
 
 
 class ScenarioAnalysisChart(QtWidgets.QWidget):
-    """"""
+    """在价格、波动率和时间变动下绘制组合情景曲面。"""
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
-        """"""
+        """绑定引擎并初始化情景分析界面。"""
         super().__init__()
 
         self.option_engine: OptionEngine = option_engine
@@ -206,7 +208,7 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
         self.init_ui()
 
     def init_ui(self) -> None:
-        """"""
+        """创建价格、波动率、时间和目标数据控件，以及三维坐标。"""
         self.setWindowTitle("情景分析")
 
         # Create widgets
@@ -271,7 +273,7 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
         self.setLayout(vbox)
 
     def run_analysis(self) -> None:
-        """"""
+        """任一标的中间价为 0 时警告并返回，否则在价格和隐波网格上按时间衰减计算所选目标并绘图，没有行情的期权价格差按 0 计。"""
         # Generate range
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
 
@@ -389,7 +391,7 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
         target_data: list[list[float]],
         target_name: str
     ) -> None:
-        """"""
+        """清空坐标后，用价格和隐波网格绘制目标数据曲面，并把竖轴标题设为目标名称。"""
         self.ax.clear()
 
         price_changes, impv_changes = np.meshgrid(price_changes, impv_changes)

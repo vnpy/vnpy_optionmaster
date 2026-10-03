@@ -1,3 +1,4 @@
+"""打印 Python 与 Cython 定价模型的价格和希腊值。"""
 from vnpy_optionmaster.pricing import (
     binomial_tree as binomial_tree_python,
     black_76 as black_76_python,
