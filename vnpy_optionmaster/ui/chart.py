@@ -5,7 +5,7 @@ from typing import cast
 from vnpy.trader.ui import QtWidgets, QtCore, QtGui
 from vnpy.trader.event import EVENT_TIMER
 
-from ..base import PortfolioData, OptionData
+from ..base import PortfolioData, OptionData, ChainData, UnderlyingData
 from ..engine import OptionEngine, Event, EventEngine
 from ..time import ANNUAL_DAYS
 
@@ -72,6 +72,7 @@ class OptionVolatilityChart(QtWidgets.QWidget):
 
         hbox.addStretch()
 
+        chain_symbol: str
         for chain_symbol in chain_symbols:
             chain_check: QtWidgets.QCheckBox = QtWidgets.QCheckBox()
             chain_check.setText(chain_symbol.split(".")[0])
@@ -87,7 +88,7 @@ class OptionVolatilityChart(QtWidgets.QWidget):
         pg.setConfigOptions(antialias=True)
 
         graphics_window: pg.GraphicsLayoutWidget = pg.GraphicsLayoutWidget()
-        self.impv_chart = graphics_window.addPlot(title="隐含波动率曲线")
+        self.impv_chart: pg.PlotItem = graphics_window.addPlot(title="隐含波动率曲线")
         self.impv_chart.showGrid(x=True, y=True)
         self.impv_chart.setLabel("left", "波动率")
         self.impv_chart.setLabel("bottom", "行权价")
@@ -152,12 +153,14 @@ class OptionVolatilityChart(QtWidgets.QWidget):
         """按行权价刷新各链看涨中间隐波、看跌中间隐波和定价隐波的百分数。"""
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
 
+        chain: ChainData
         for chain in portfolio.chains.values():
             call_impv: list = []
             put_impv: list = []
             pricing_impv: list = []
             strike_prices: list = []
 
+            index: str
             for index in chain.indexes:
                 call: OptionData = chain.calls[index]
                 call_impv.append(call.mid_impv * 100)
@@ -184,6 +187,8 @@ class OptionVolatilityChart(QtWidgets.QWidget):
         """清空图表后，只加回已勾选期权链的曲线。"""
         self.impv_chart.clear()
 
+        chain_symbol: str
+        checkbox: QtWidgets.QCheckBox
         for chain_symbol, checkbox in self.chain_checks.items():
             if checkbox.isChecked():
                 call_curve: pg.PlotCurveItem = self.call_curves[chain_symbol]
@@ -243,8 +248,8 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
         fig: Figure = Figure()
         canvas: FigureCanvas = FigureCanvas(fig)
 
-        ax = fig.add_subplot(projection="3d")
-        self.ax = cast(Axes3D, ax)
+        ax: object = fig.add_subplot(projection="3d")
+        self.ax: Axes3D = cast(Axes3D, ax)
         self.ax.set_xlabel("价格涨跌 %")
         self.ax.set_ylabel("波动率涨跌 %")
         self.ax.set_zlabel("盈亏")
@@ -277,16 +282,17 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
         # Generate range
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
 
-        price_change_range = self.price_change_spin.value()
-        price_changes = np.arange(-price_change_range, price_change_range + 1) / 100
+        price_change_range: int = self.price_change_spin.value()
+        price_changes: np.ndarray = np.arange(-price_change_range, price_change_range + 1) / 100
 
-        impv_change_range = self.impv_change_spin.value()
-        impv_changes = np.arange(-impv_change_range, impv_change_range + 1) / 100
+        impv_change_range: int = self.impv_change_spin.value()
+        impv_changes: np.ndarray = np.arange(-impv_change_range, impv_change_range + 1) / 100
 
-        time_change = self.time_change_spin.value() / ANNUAL_DAYS
-        target_name = self.target_combo.currentText()
+        time_change: float = self.time_change_spin.value() / ANNUAL_DAYS
+        target_name: str = self.target_combo.currentText()
 
         # Check underlying price exists
+        underlying: UnderlyingData
         for underlying in portfolio.underlyings.values():
             if not underlying.mid_price:
                 QtWidgets.QMessageBox.warning(
@@ -304,6 +310,7 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
         thetas: list = []
         vegas: list = []
 
+        impv_change: float
         for impv_change in impv_changes:
             pnl_buf: list = []
             delta_buf: list = []
@@ -311,6 +318,7 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
             theta_buf: list = []
             vega_buf: list = []
 
+            price_change: float
             for price_change in price_changes:
                 portfolio_pnl: float = 0
                 portfolio_delta: float = 0.0
@@ -323,19 +331,25 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
                     if not underlying.net_pos:
                         continue
 
-                    value = underlying.mid_price * underlying.net_pos * underlying.size
+                    value: float = underlying.mid_price * underlying.net_pos * underlying.size
                     portfolio_pnl += value * price_change
                     portfolio_delta += value / 100
 
                 # Calculate option pnl
+                option: OptionData
                 for option in portfolio.options.values():
                     if not option.net_pos:
                         continue
 
-                    new_underlying_price = option.underlying.mid_price * (1 + price_change)
-                    new_time_to_expiry = max(option.time_to_expiry - time_change, 0)
-                    new_mid_impv = option.mid_impv * (1 + impv_change)
+                    new_underlying_price: float = option.underlying.mid_price * (1 + price_change)
+                    new_time_to_expiry: float = max(option.time_to_expiry - time_change, 0)
+                    new_mid_impv: float = option.mid_impv * (1 + impv_change)
 
+                    new_price: float
+                    delta: float
+                    gamma: float
+                    theta: float
+                    vega: float
                     new_price, delta, gamma, theta, vega = option.calculate_greeks(
                         new_underlying_price,
                         option.strike_price,
@@ -347,10 +361,10 @@ class ScenarioAnalysisChart(QtWidgets.QWidget):
 
                     # 添加对option.tick为None的检查
                     if option.tick is None:
-                        diff = 0
+                        diff: float = 0
                     else:
                         diff = new_price - option.tick.last_price
-                    multiplier = option.net_pos * option.size
+                    multiplier: float = option.net_pos * option.size
 
                     portfolio_pnl += diff * multiplier
                     portfolio_delta += delta * multiplier

@@ -15,14 +15,14 @@ from vnpy.trader.utility import extract_vt_symbol
 from .time import calculate_days_to_expiry, ANNUAL_DAYS
 
 
-APP_NAME = "OptionMaster"
+APP_NAME: str = "OptionMaster"
 
-EVENT_OPTION_NEW_PORTFOLIO = "eOptionNewPortfolio"
-EVENT_OPTION_ALGO_PRICING = "eOptionAlgoPricing"
-EVENT_OPTION_ALGO_TRADING = "eOptionAlgoTrading"
-EVENT_OPTION_ALGO_STATUS = "eOptionAlgoStatus"
-EVENT_OPTION_ALGO_LOG = "eOptionAlgoLog"
-EVENT_OPTION_RISK_NOTICE = "eOptionRiskNotice"
+EVENT_OPTION_NEW_PORTFOLIO: str = "eOptionNewPortfolio"
+EVENT_OPTION_ALGO_PRICING: str = "eOptionAlgoPricing"
+EVENT_OPTION_ALGO_TRADING: str = "eOptionAlgoTrading"
+EVENT_OPTION_ALGO_STATUS: str = "eOptionAlgoStatus"
+EVENT_OPTION_ALGO_LOG: str = "eOptionAlgoLog"
+EVENT_OPTION_RISK_NOTICE: str = "eOptionRiskNotice"
 
 
 class InstrumentData:
@@ -190,6 +190,10 @@ class OptionData(InstrumentData):
             return
         underlying_price += self.underlying_adjustment
 
+        delta: float
+        gamma: float
+        theta: float
+        vega: float
         _, delta, gamma, theta, vega = self.calculate_greeks(
             underlying_price,
             self.strike_price,
@@ -287,6 +291,7 @@ class UnderlyingData(InstrumentData):
         """更新标的行情，通知各期权链，并重算持仓 delta。"""
         super().update_tick(tick)
 
+        chain: ChainData
         for chain in self.chains.values():
             chain.update_underlying_tick()
 
@@ -373,6 +378,7 @@ class ChainData:
         self.pos_vega = 0
 
         # Sum all value
+        option: OptionData
         for option in self.options.values():
             if option.net_pos:
                 self.long_pos += option.long_pos
@@ -402,6 +408,7 @@ class ChainData:
         if not self.use_synthetic:
             self.calculate_underlying_adjustment()
 
+        option: OptionData
         for option in self.options.values():
             option.update_underlying_tick(self.underlying_adjustment)
 
@@ -439,6 +446,7 @@ class ChainData:
         underlying.add_chain(self)
         self.underlying = underlying
 
+        option: OptionData
         for option in self.options.values():
             option.set_underlying(underlying)
 
@@ -447,16 +455,19 @@ class ChainData:
 
     def set_interest_rate(self, interest_rate: float) -> None:
         """把利率写到链上每个期权。"""
+        option: OptionData
         for option in self.options.values():
             option.set_interest_rate(interest_rate)
 
     def set_pricing_model(self, pricing_model: ModuleType) -> None:
         """把定价模型写到链上每个期权。"""
+        option: OptionData
         for option in self.options.values():
             option.set_pricing_model(pricing_model)
 
     def set_portfolio(self, portfolio: "PortfolioData") -> None:
         """把组合写到链上每个期权。"""
+        option: OptionData
         for option in self.options.values():
             option.set_portfolio(portfolio)
 
@@ -466,6 +477,8 @@ class ChainData:
         atm_price: float = 0
         atm_index: str = ""
 
+        index: str
+        call: OptionData
         for index, call in self.calls.items():
             put: OptionData = self.puts[index]
 
@@ -513,6 +526,8 @@ class ChainData:
         self.update_underlying_tick()
 
         # 推送合成期货的行情
+        symbol: str
+        exchange: Exchange
         symbol, exchange = extract_vt_symbol(self.underlying.vt_symbol)
 
         tick: TickData = TickData(
@@ -561,15 +576,17 @@ class PortfolioData:
         self.short_pos = 0
         self.net_pos = 0
 
-        self.pos_value = 0.0
+        self.pos_value: float = 0.0
         self.pos_delta = 0
         self.pos_gamma = 0
         self.pos_theta = 0
         self.pos_vega = 0
 
+        underlying: UnderlyingData
         for underlying in self.underlyings.values():
             self.pos_delta += underlying.pos_delta
 
+        chain: ChainData
         for chain in self.chains.values():
             self.long_pos += chain.long_pos
             self.short_pos += chain.short_pos
@@ -607,11 +624,13 @@ class PortfolioData:
 
     def set_interest_rate(self, interest_rate: float) -> None:
         """把利率写到每条活跃期权链。"""
+        chain: ChainData
         for chain in self.chains.values():
             chain.set_interest_rate(interest_rate)
 
     def set_pricing_model(self, pricing_model: ModuleType) -> None:
         """把定价模型写到每条活跃期权链。"""
+        chain: ChainData
         for chain in self.chains.values():
             chain.set_pricing_model(pricing_model)
 
@@ -633,6 +652,7 @@ class PortfolioData:
         # Add to active dict
         self.chains[chain_symbol] = chain
 
+        option: OptionData
         for option in chain.options.values():
             self.options[option.vt_symbol] = option
 
@@ -661,6 +681,7 @@ class PortfolioData:
 
     def calculate_atm_price(self) -> None:
         """让每条活跃期权链重算平值价格。"""
+        chain: ChainData
         for chain in self.chains.values():
             chain.calculate_atm_price()
 

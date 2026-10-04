@@ -1,9 +1,11 @@
 """Black-Scholes 期权定价。"""
+from collections.abc import Callable
+
 from scipy import stats
 from math import log, pow, sqrt, exp
 
-cdf = stats.norm.cdf
-pdf = stats.norm.pdf
+cdf: Callable[..., float] = stats.norm.cdf
+pdf: Callable[..., float] = stats.norm.pdf
 
 
 def calculate_d1(
@@ -179,6 +181,7 @@ def calculate_impv(
     v: float = v_base * adjustment
     v = min(max(v, 0.2), 5.0)
 
+    _i: int
     for _i in range(100):
         # Calculate option price and vega with current guess
         p: float = calculate_price(s, k, r, t, v, cp)

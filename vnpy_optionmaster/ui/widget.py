@@ -6,7 +6,7 @@ from vnpy.event import EventEngine, Event
 from vnpy.trader.engine import MainEngine
 from vnpy.trader.ui import QtWidgets, QtCore, QtGui
 from vnpy.trader.constant import Direction, Offset, OrderType
-from vnpy.trader.object import OrderRequest, CancelRequest, ContractData, TickData
+from vnpy.trader.object import OrderData, OrderRequest, CancelRequest, ContractData, TickData
 from vnpy.trader.event import EVENT_TICK
 from vnpy.trader.utility import get_digits
 
@@ -55,20 +55,21 @@ class OptionManager(QtWidgets.QWidget):
         self.portfolio_combo.setFixedWidth(150)
         self.update_portfolio_combo()
 
-        self.portfolio_button = QtWidgets.QPushButton("配置")
+        self.portfolio_button: QtWidgets.QPushButton = QtWidgets.QPushButton("配置")
         self.portfolio_button.clicked.connect(self.open_portfolio_dialog)
 
-        self.market_button = QtWidgets.QPushButton("T型报价")
-        self.greeks_button = QtWidgets.QPushButton("持仓希腊值")
-        self.chain_button = QtWidgets.QPushButton("升贴水监控")
-        self.manual_button = QtWidgets.QPushButton("快速交易")
-        self.volatility_button = QtWidgets.QPushButton("波动率曲线")
-        self.hedge_button = QtWidgets.QPushButton("Delta对冲")
-        self.scenario_button = QtWidgets.QPushButton("情景分析")
-        self.eye_button = QtWidgets.QPushButton("电子眼")
-        self.pricing_button = QtWidgets.QPushButton("波动率管理")
-        self.risk_button = QtWidgets.QPushButton("风险监控")
+        self.market_button: QtWidgets.QPushButton = QtWidgets.QPushButton("T型报价")
+        self.greeks_button: QtWidgets.QPushButton = QtWidgets.QPushButton("持仓希腊值")
+        self.chain_button: QtWidgets.QPushButton = QtWidgets.QPushButton("升贴水监控")
+        self.manual_button: QtWidgets.QPushButton = QtWidgets.QPushButton("快速交易")
+        self.volatility_button: QtWidgets.QPushButton = QtWidgets.QPushButton("波动率曲线")
+        self.hedge_button: QtWidgets.QPushButton = QtWidgets.QPushButton("Delta对冲")
+        self.scenario_button: QtWidgets.QPushButton = QtWidgets.QPushButton("情景分析")
+        self.eye_button: QtWidgets.QPushButton = QtWidgets.QPushButton("电子眼")
+        self.pricing_button: QtWidgets.QPushButton = QtWidgets.QPushButton("波动率管理")
+        self.risk_button: QtWidgets.QPushButton = QtWidgets.QPushButton("风险监控")
 
+        button: QtWidgets.QPushButton
         for button in [
             self.market_button,
             self.greeks_button,
@@ -147,7 +148,7 @@ class OptionManager(QtWidgets.QWidget):
         self.scenario_chart = ScenarioAnalysisChart(self.option_engine, self.portfolio_name)
         self.eye_manager = ElectronicEyeManager(self.option_engine, self.portfolio_name)
         self.pricing_manager = PricingVolatilityManager(self.option_engine, self.portfolio_name)
-        self.risk_widget = OptionRiskWidget(self.option_engine)
+        self.risk_widget: OptionRiskWidget = OptionRiskWidget(self.option_engine)
 
         self.market_monitor.itemDoubleClicked.connect(self.manual_trader.update_symbol)
 
@@ -162,6 +163,7 @@ class OptionManager(QtWidgets.QWidget):
         self.pricing_button.clicked.connect(self.pricing_manager.show)
         self.risk_button.clicked.connect(self.risk_widget.show)
 
+        button: QtWidgets.QPushButton
         for button in [
             self.market_button,
             self.greeks_button,
@@ -196,7 +198,7 @@ class OptionManager(QtWidgets.QWidget):
 class PortfolioDialog(QtWidgets.QDialog):
     """配置定价模型、利率、精度和各链标的的对话框。"""
 
-    def __init__(self, option_engine: OptionEngine, portfolio_name: str):
+    def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """保存引擎与组合名称并初始化表单。"""
         super().__init__()
 
@@ -262,13 +264,15 @@ class PortfolioDialog(QtWidgets.QDialog):
 
         chain_underlying_map: dict = portfolio_setting.get("chain_underlying_map", {})
 
+        chain_symbol: str
         for chain_symbol in chain_symbols:
             combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
             combo.addItem("")
             combo.addItems(underlying_symbols)
 
+            symbol: str
             symbol, _ = chain_symbol.split(".")
-            synthetic_symbol = f"{symbol}.LOCAL"
+            synthetic_symbol: str = f"{symbol}.LOCAL"
             combo.addItem(synthetic_symbol)
 
             underlying_symbol: str = chain_underlying_map.get(chain_symbol, "")
@@ -293,6 +297,8 @@ class PortfolioDialog(QtWidgets.QDialog):
         precision: int = self.precision_spin.value()
 
         chain_underlying_map: dict = {}
+        chain_symbol: str
+        combo: QtWidgets.QComboBox
         for chain_symbol, combo in self.combos.items():
             underlying_symbol: str = combo.currentText()
 
@@ -449,6 +455,7 @@ class OptionManualTrader(QtWidgets.QWidget):
     def init_contracts(self) -> None:
         """以代码为键缓存主引擎中的全部合约。"""
         contracts: list[ContractData] = self.main_engine.get_all_contracts()
+        contract: ContractData
         for contract in contracts:
             self.contracts[contract.symbol] = contract
 
@@ -487,6 +494,7 @@ class OptionManualTrader(QtWidgets.QWidget):
 
     def cancel_all(self) -> None:
         """撤销主引擎中的全部活动委托。"""
+        order: OrderData
         for order in self.main_engine.get_all_active_orders():
             req: CancelRequest = order.create_cancel_request()
             self.main_engine.cancel_order(req, order.gateway_name)
@@ -795,7 +803,7 @@ class OptionRiskWidget(QtWidgets.QWidget):
 
     def process_event(self, event: Event) -> None:
         """刷新各项统计；成交持仓比或撤单委托比达到限额时弹出风险提示。"""
-        data = event.data
+        data: dict = event.data
         self.trade_volume_label.setText(str(data["trade_volume"]))
         self.net_pos_label.setText(str(data["net_pos"]))
         self.order_count_label.setText(str(data["order_count"]))
@@ -805,7 +813,7 @@ class OptionRiskWidget(QtWidgets.QWidget):
 
         texts: list = []
         if data["trade_position_ratio"] >= self.trade_position_limit:
-            ratio = data["trade_position_ratio"]
+            ratio: float = data["trade_position_ratio"]
             texts.append(f"当前交易持仓比{ratio}超过限制{self.trade_position_limit}！")
 
         if data["cancel_order_ratio"] >= self.cancel_order_limit:

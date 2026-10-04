@@ -3,7 +3,7 @@ from numpy import zeros, ndarray
 from math import exp, sqrt
 
 
-DEFAULT_STEP = 15
+DEFAULT_STEP: int = 15
 
 
 def generate_tree(
@@ -34,8 +34,10 @@ def generate_tree(
     # Calculate underlying price tree
     underlying_tree[0, 0] = f
 
+    i: int
     for i in range(1, n + 1):
         underlying_tree[0, i] = underlying_tree[0, i - 1] * u
+        j: int
         for j in range(1, n + 1):
             underlying_tree[j, i] = underlying_tree[j - 1, i - 1] * d
 
@@ -65,6 +67,7 @@ def calculate_price(
     n: int = DEFAULT_STEP
 ) -> float:
     """计算期权价格。"""
+    option_tree: ndarray
     option_tree, _ = generate_tree(f, k, r, t, v, cp, n)
     return option_tree[0, 0]                               # type: ignore
 
@@ -79,6 +82,8 @@ def calculate_delta(
     n: int = DEFAULT_STEP
 ) -> float:
     """计算期权 Delta。"""
+    option_tree: ndarray
+    underlying_tree: ndarray
     option_tree, underlying_tree = generate_tree(f, k, r, t, v, cp, n)
 
     option_price_change: float = option_tree[0, 1] - option_tree[1, 1]
@@ -98,6 +103,8 @@ def calculate_gamma(
     n: int = DEFAULT_STEP
 ) -> float:
     """计算期权 Gamma。"""
+    option_tree: ndarray
+    underlying_tree: ndarray
     option_tree, underlying_tree = generate_tree(f, k, r, t, v, cp, n)
 
     gamma_delta_1: float = (option_tree[0, 2] - option_tree[1, 2]) / \
@@ -120,6 +127,7 @@ def calculate_theta(
     n: int = DEFAULT_STEP
 ) -> float:
     """计算期权 Theta。"""
+    option_tree: ndarray
     option_tree, _ = generate_tree(f, k, r, t, v, cp, n)
 
     dt: float = t / n
@@ -155,7 +163,10 @@ def calculate_greeks(
 ) -> tuple[float, float, float, float, float]:
     """计算期权价格和希腊值。"""
     dt: float = t / n
+    option_tree: ndarray
+    underlying_tree: ndarray
     option_tree, underlying_tree = generate_tree(f, k, r, t, v, cp, n)
+    option_tree_vega: ndarray
     option_tree_vega, _ = generate_tree(f, k, r, t, v * 1.001, cp, n)
 
     # Price
@@ -229,6 +240,7 @@ def calculate_impv(
     v: float = v_base * adjustment
     v = min(max(v, 0.2), 5.0)
 
+    _i: int
     for _i in range(100):
         # Calculate option price and vega with current guess
         p: float = calculate_price(f, k, r, t, v, cp, n)

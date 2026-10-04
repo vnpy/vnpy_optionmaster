@@ -1,6 +1,7 @@
 """期权主引擎以及 Delta 对冲、电子眼和风控。"""
 from copy import copy
 from collections import defaultdict
+from types import ModuleType
 from typing import cast
 
 from vnpy.trader.object import (
@@ -28,7 +29,7 @@ from .base import (
     EVENT_OPTION_ALGO_STATUS,
     EVENT_OPTION_ALGO_LOG,
     EVENT_OPTION_RISK_NOTICE,
-    InstrumentData, PortfolioData, OptionData, UnderlyingData,
+    InstrumentData, PortfolioData, OptionData, UnderlyingData, ChainData,
     get_underlying_prefix
 )
 try:
@@ -95,6 +96,7 @@ class OptionEngine(BaseEngine):
         """为活跃组合恢复非合成链的标的调整量，并把保存的定价隐含波动率写到认购和认沽。"""
         data: dict = load_json(self.data_filename)
 
+        portfolio: PortfolioData
         for portfolio in self.active_portfolios.values():
             portfolio_name: str = portfolio.name
 
@@ -103,6 +105,7 @@ class OptionEngine(BaseEngine):
             chain_adjustment_data: dict = chain_adjustments.get(portfolio_name, {})
 
             if chain_adjustment_data:
+                chain: ChainData
                 for chain in portfolio.chains.values():
                     if not chain.use_synthetic:
                         chain.underlying_adjustment = chain_adjustment_data.get(
@@ -115,9 +118,10 @@ class OptionEngine(BaseEngine):
 
             if pricing_impv_data:
                 for chain in portfolio.chains.values():
+                    index: str
                     for index in chain.indexes:
                         key: str = f"{chain.chain_symbol}_{index}"
-                        pricing_impv = pricing_impv_data.get(key, 0)
+                        pricing_impv: float = pricing_impv_data.get(key, 0)
 
                         if pricing_impv:
                             call: OptionData = chain.calls[index]
@@ -131,12 +135,15 @@ class OptionEngine(BaseEngine):
         chain_adjustments: dict = {}
         pricing_impvs: dict = {}
 
+        portfolio: PortfolioData
         for portfolio in self.active_portfolios.values():
             chain_adjustment_data: dict = {}
             pricing_impv_data: dict = {}
+            chain: ChainData
             for chain in portfolio.chains.values():
                 chain_adjustment_data[chain.chain_symbol] = chain.underlying_adjustment
 
+                call: OptionData
                 for call in chain.calls.values():
                     key: str = f"{chain.chain_symbol}_{call.chain_index}"
                     pricing_impv_data[key] = call.pricing_impv
@@ -204,6 +211,7 @@ class OptionEngine(BaseEngine):
             return
         self.timer_count = 0
 
+        portfolio: PortfolioData
         for portfolio in self.active_portfolios.values():
             portfolio.calculate_atm_price()
 
@@ -239,8 +247,12 @@ class OptionEngine(BaseEngine):
         """按模型、利率、标的映射和精度更新组合；名称含 LOCAL 的标的建成指数合约，并保存配置。"""
         portfolio: PortfolioData = self.get_portfolio(portfolio_name)
 
+        chain_symbol: str
+        underlying_symbol: str
         for chain_symbol, underlying_symbol in chain_underlying_map.items():
             if "LOCAL" in underlying_symbol:
+                symbol: str
+                exchange: Exchange
                 symbol, exchange = extract_vt_symbol(underlying_symbol)
                 contract: ContractData | None = ContractData(
                     symbol=symbol,
@@ -259,7 +271,7 @@ class OptionEngine(BaseEngine):
 
         portfolio.set_interest_rate(interest_rate)
 
-        pricing_model = PRICING_MODELS[model_name]
+        pricing_model: ModuleType = PRICING_MODELS[model_name]
         portfolio.set_pricing_model(pricing_model)
         portfolio.set_precision(precision)
 
@@ -287,6 +299,7 @@ class OptionEngine(BaseEngine):
         self.active_portfolios[portfolio_name] = portfolio
 
         # Subscribe market data
+        underlying: UnderlyingData
         for underlying in portfolio.underlyings.values():
             if underlying.exchange == Exchange.LOCAL:
                 continue
@@ -294,6 +307,7 @@ class OptionEngine(BaseEngine):
             self.instruments[underlying.vt_symbol] = underlying
             self.subscribe_data(underlying.vt_symbol)
 
+        option: OptionData
         for option in portfolio.options.values():
             # Ignore options with no underlying set
             if not option.underlying:
@@ -303,6 +317,7 @@ class OptionEngine(BaseEngine):
             self.subscribe_data(option.vt_symbol)
 
         # Update position volume
+        instrument: InstrumentData
         for instrument in self.instruments.values():
             contract: ContractData = self.main_engine.get_contract(instrument.vt_symbol)            # type: ignore
             converter: OffsetConverter = self.main_engine.get_converter(contract.gateway_name)      # type: ignore
@@ -328,6 +343,7 @@ class OptionEngine(BaseEngine):
         underlying_symbols: list = []
 
         contracts: list[ContractData] = self.main_engine.get_all_contracts()
+        contract: ContractData
         for contract in contracts:
             if contract.product == Product.OPTION:
                 continue
@@ -438,8 +454,8 @@ class OptionHedgeEngine:
             self.cancel_all()
             return
 
-        delta_max = self.delta_target + self.delta_range
-        delta_min = self.delta_target - self.delta_range
+        delta_max: float = self.delta_target + self.delta_range
+        delta_min: float = self.delta_target - self.delta_range
 
         # Do nothing if portfolio delta is in the allowed range
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
@@ -447,10 +463,10 @@ class OptionHedgeEngine:
             return
 
         # Calculate volume of contract to hedge
-        delta_to_hedge = self.delta_target - portfolio.pos_delta
+        delta_to_hedge: float = self.delta_target - portfolio.pos_delta
         instrument: UnderlyingData = cast(UnderlyingData, self.option_engine.get_instrument(self.vt_symbol))
 
-        hedge_volume = delta_to_hedge / instrument.theo_delta
+        hedge_volume: float = delta_to_hedge / instrument.theo_delta
 
         # Send hedge orders
         tick: TickData | None = self.main_engine.get_tick(self.vt_symbol)
@@ -473,7 +489,7 @@ class OptionHedgeEngine:
             direction: Direction = Direction.LONG
 
             if holding:
-                available = holding.short_pos - holding.short_pos_frozen
+                available: float = holding.short_pos - holding.short_pos_frozen
             else:
                 available = 0
         else:
@@ -485,7 +501,7 @@ class OptionHedgeEngine:
             else:
                 available = 0
 
-        order_volume = abs(hedge_volume)
+        order_volume: float = abs(hedge_volume)
 
         req: OrderRequest = OrderRequest(
             symbol=contract.symbol,
@@ -512,7 +528,7 @@ class OptionHedgeEngine:
             close_req: OrderRequest = copy(req)
             close_req.offset = Offset.CLOSE
             close_req.volume = available
-            close_orderid = self.main_engine.send_order(close_req, contract.gateway_name)
+            close_orderid: str = self.main_engine.send_order(close_req, contract.gateway_name)
             self.active_orderids.add(close_orderid)
 
             open_req: OrderRequest = copy(req)
@@ -530,6 +546,7 @@ class OptionHedgeEngine:
 
     def cancel_all(self) -> None:
         """逐个撤销仍能查到的活动委托。"""
+        vt_orderid: str
         for vt_orderid in self.active_orderids:
             order: OrderData | None = self.main_engine.get_order(vt_orderid)
             if order:
@@ -561,6 +578,7 @@ class OptionAlgoEngine:
 
         portfolio: PortfolioData = self.option_engine.get_portfolio(portfolio_name)
 
+        option: OptionData
         for option in portfolio.options.values():
             algo: ElectronicEyeAlgo = ElectronicEyeAlgo(self, option)
             self.algos[option.vt_symbol] = algo
@@ -575,6 +593,7 @@ class OptionAlgoEngine:
         """把标的行情分发给挂在该标的上的算法。"""
         tick: TickData = event.data
 
+        algo: ElectronicEyeAlgo
         for algo in self.underlying_algo_map[tick.vt_symbol]:
             algo.on_underlying_tick(tick)
 
@@ -603,6 +622,7 @@ class OptionAlgoEngine:
 
     def process_timer_event(self, event: Event) -> None:
         """让每个运行中的算法处理定时事件。"""
+        algo: ElectronicEyeAlgo
         for algo in self.active_algos.values():
             algo.on_timer()
 
@@ -772,6 +792,7 @@ class OptionRiskEngine:
         self.timer_count = 0
 
         self.net_pos = 0
+        instrument: InstrumentData
         for instrument in self.instruments.values():
             self.net_pos += instrument.net_pos
 

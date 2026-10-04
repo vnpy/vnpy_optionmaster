@@ -1,7 +1,7 @@
 """期权 T 型报价、持仓希腊值和升贴水监控表。"""
 from copy import copy
 from collections import defaultdict
-from typing import cast
+from typing import TypeAlias, cast
 
 from vnpy.event import Event, EventEngine
 from vnpy.trader.ui import QtWidgets, QtCore, QtGui
@@ -16,9 +16,9 @@ from ..engine import OptionEngine
 from ..base import UnderlyingData, OptionData, ChainData, PortfolioData, InstrumentData
 
 
-COLOR_WHITE = QtGui.QColor("white")
-COLOR_POS = QtGui.QColor("yellow")
-COLOR_GREEKS = QtGui.QColor("cyan")
+COLOR_WHITE: QtGui.QColor = QtGui.QColor("white")
+COLOR_POS: QtGui.QColor = QtGui.QColor("yellow")
+COLOR_GREEKS: QtGui.QColor = QtGui.QColor("cyan")
 
 
 class MonitorCell(QtWidgets.QTableWidgetItem):
@@ -99,7 +99,7 @@ class MonitorTable(QtWidgets.QTableWidget):
         """
         self.menu: QtWidgets.QMenu = QtWidgets.QMenu(self)
 
-        resize_action = QtGui.QAction("调整列宽", self)
+        resize_action: QtGui.QAction = QtGui.QAction("调整列宽", self)
         resize_action.triggered.connect(self.resizeColumnsToContents)
         self.menu.addAction(resize_action)
 
@@ -157,6 +157,7 @@ class OptionMarketMonitor(MonitorTable):
         # Store option and underlying symbols
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
 
+        option: OptionData
         for option in portfolio.options.values():
             self.option_symbols.add(option.vt_symbol)
             self.underlying_option_map[option.underlying.vt_symbol].append(option.vt_symbol)
@@ -166,6 +167,7 @@ class OptionMarketMonitor(MonitorTable):
 
         # Set table row and column numbers
         row_count: int = 0
+        chain: ChainData
         for chain in portfolio.chains.values():
             row_count += (1 + len(chain.indexes))
         self.setRowCount(row_count)
@@ -186,6 +188,7 @@ class OptionMarketMonitor(MonitorTable):
         chain_symbols: list = list(portfolio.chains.keys())
         chain_symbols.sort()
 
+        chain_symbol: str
         for chain_symbol in chain_symbols:
             chain = portfolio.get_chain(chain_symbol)
 
@@ -195,6 +198,7 @@ class OptionMarketMonitor(MonitorTable):
                 IndexCell(chain.chain_symbol.split(".")[0])
             )
 
+            index: str
             for index in chain.indexes:
                 call: OptionData = chain.calls[index]
                 put: OptionData = chain.puts[index]
@@ -204,9 +208,11 @@ class OptionMarketMonitor(MonitorTable):
                 # Call cells
                 call_cells: dict = {}
 
+                column: int
+                d: dict
                 for column, d in enumerate(self.headers):
-                    value = getattr(call, d["name"], "")
-                    cell = d["cell"](
+                    value: object = getattr(call, d["name"], "")
+                    cell: MonitorCell = d["cell"](
                         text=str(value),
                         vt_symbol=call.vt_symbol
                     )
@@ -260,6 +266,7 @@ class OptionMarketMonitor(MonitorTable):
         elif tick.vt_symbol in self.underlying_option_map:
             option_symbols: list = self.underlying_option_map[tick.vt_symbol]
 
+            vt_symbol: str
             for vt_symbol in option_symbols:
                 self.update_impv(vt_symbol)
                 self.update_greeks(vt_symbol)
@@ -341,7 +348,7 @@ class OptionGreeksMonitor(MonitorTable):
         {"name": "pos_vega", "display": "Vega", "cell": GreeksCell}
     ]
 
-    ROW_DATA = OptionData | UnderlyingData | ChainData | PortfolioData
+    ROW_DATA: TypeAlias = OptionData | UnderlyingData | ChainData | PortfolioData
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """绑定引擎，记录期权和标的映射，并初始化希腊值表和事件。"""
@@ -367,6 +374,7 @@ class OptionGreeksMonitor(MonitorTable):
         # Store option and underlying symbols
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
 
+        option: OptionData
         for option in portfolio.options.values():
             self.option_symbols.add(option.vt_symbol)
             self.underlying_option_map[option.underlying.vt_symbol].append(option.vt_symbol)
@@ -381,6 +389,7 @@ class OptionGreeksMonitor(MonitorTable):
 
         row_count += (len(portfolio.chains) + 1)
 
+        chain: ChainData
         for chain in portfolio.chains.values():
             row_count += len(chain.options)
 
@@ -399,36 +408,45 @@ class OptionGreeksMonitor(MonitorTable):
 
         underlying_symbols: list = list(portfolio.underlyings.keys())
         underlying_symbols.sort()
+        underlying_symbol: str
         for underlying_symbol in underlying_symbols:
             row_settings.append((underlying_symbol, "标的"))
         row_settings.append(None)
 
         chain_symbols: list = list(portfolio.chains.keys())
         chain_symbols.sort()
+        chain_symbol: str
         for chain_symbol in chain_symbols:
             row_settings.append((chain_symbol, "期权链"))
         row_settings.append(None)
 
         option_symbols: list = list(portfolio.options.keys())
         option_symbols.sort()
+        option_symbol: str
         for option_symbol in option_symbols:
             row_settings.append((option_symbol, "期权"))
 
+        row: int
+        row_key: tuple[str, str] | None
         for row, row_key in enumerate(row_settings):
             if not row_key:
                 continue
+            row_name: str
+            type_name: str
             row_name, type_name = row_key
 
             type_cell: MonitorCell = MonitorCell(type_name)
             self.setItem(row, 0, type_cell)
 
-            name = row_name.split(".")[0]
+            name: str = row_name.split(".")[0]
             name_cell: MonitorCell = MonitorCell(name)
             self.setItem(row, 1, name_cell)
 
             row_cells: dict = {}
+            column: int
+            d: dict
             for column, d in enumerate(self.headers):
-                cell = d["cell"]()
+                cell: MonitorCell = d["cell"]()
                 self.setItem(row, column + 2, cell)
                 row_cells[d["name"]] = cell
             self.cells[row_key] = row_cells
@@ -478,9 +496,11 @@ class OptionGreeksMonitor(MonitorTable):
         underlying: UnderlyingData = cast(UnderlyingData, self.option_engine.get_instrument(vt_symbol))
         self.update_row(vt_symbol, "标的", underlying)
 
+        chain: ChainData
         for chain in underlying.chains.values():
             self.update_row(chain.chain_symbol, "期权链", chain)
 
+            option: OptionData
             for option in chain.options.values():
                 self.update_row(option.vt_symbol, "期权", option)
 
@@ -533,7 +553,7 @@ class OptionChainMonitor(MonitorTable):
     """显示期权链剩余交易日、标的和升贴水的表。"""
     signal_timer: QtCore.Signal = QtCore.Signal(Event)
 
-    def __init__(self, option_engine: OptionEngine, portfolio_name: str):
+    def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """绑定引擎并初始化期权链表和定时事件。"""
         super().__init__()
 
@@ -566,6 +586,8 @@ class OptionChainMonitor(MonitorTable):
         chain_symbols: list = list(portfolio.chains.keys())
         chain_symbols.sort()
 
+        row: int
+        chain_symbol: str
         for row, chain_symbol in enumerate(chain_symbols):
             chain: ChainData = portfolio.chains[chain_symbol]
             adjustment_cell: MonitorCell = MonitorCell()
@@ -595,6 +617,7 @@ class OptionChainMonitor(MonitorTable):
         """定时刷新每条期权链的标的代码和升贴水；调整量为无穷大时跳过，没有最小变动价位时升贴水写 0。"""
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
 
+        chain: ChainData
         for chain in portfolio.chains.values():
             underlying: UnderlyingData = chain.underlying
 
@@ -604,7 +627,7 @@ class OptionChainMonitor(MonitorTable):
                 continue
 
             if underlying.pricetick:
-                adjustment = round_to(chain.underlying_adjustment, underlying.pricetick)
+                adjustment: float = round_to(chain.underlying_adjustment, underlying.pricetick)
             else:
                 adjustment = 0
 

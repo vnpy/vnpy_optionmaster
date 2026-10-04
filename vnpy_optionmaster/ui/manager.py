@@ -1,7 +1,8 @@
 """电子眼监控和定价波动率管理界面。"""
 from copy import copy
+from collections.abc import Callable
 from functools import partial
-from typing import cast
+from typing import Any, cast
 
 from scipy import interpolate
 
@@ -256,6 +257,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         portfolio: PortfolioData = self.option_engine.get_portfolio(self.portfolio_name)
 
         row_count: int = 0
+        chain: ChainData
         for chain in portfolio.chains.values():
             row_count += (1 + len(chain.indexes))
         self.setRowCount(row_count)
@@ -276,6 +278,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         chain_symbols: list = list(portfolio.chains.keys())
         chain_symbols.sort()
 
+        chain_symbol: str
         for chain_symbol in chain_symbols:
             chain = portfolio.get_chain(chain_symbol)
 
@@ -285,6 +288,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
                 IndexCell(chain.chain_symbol.split(".")[0])
             )
 
+            index: str
             for index in chain.indexes:
                 call: OptionData = chain.calls[index]
                 put: OptionData = chain.puts[index]
@@ -294,11 +298,14 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
                 # Call cells
                 call_cells: dict = {}
 
+                column: int
+                d: dict
                 for column, d in enumerate(self.headers):
-                    cell_type = d["cell"]
+                    cell_type: type = d["cell"]
 
                     if issubclass(cell_type, QtWidgets.QPushButton):
-                        cell = cell_type(call.vt_symbol, self)
+                        # 单元格类既可能是表格项，也可能是按钮控件
+                        cell: Any = cell_type(call.vt_symbol, self)
                     else:
                         cell = cell_type()
 
@@ -345,6 +352,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         self.resizeColumnsToContents()
 
         # Update all net pos and tick cells
+        vt_symbol: str
         for vt_symbol in self.cells.keys():
             self.update_net_pos(vt_symbol)
 
@@ -365,9 +373,12 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
 
         setting: dict = load_json(self.setting_filename)
 
+        vt_symbol: str
+        cells: dict
         for vt_symbol, cells in self.cells.items():
             buf: dict | None = setting.get(vt_symbol, None)
             if buf:
+                field: str
                 for field in fields:
                     cells[field].set_value(buf[field])
 
@@ -383,8 +394,11 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         ]
 
         setting: dict = {}
+        vt_symbol: str
+        cells: dict
         for vt_symbol, cells in self.cells.items():
             buf: dict = {}
+            field: str
             for field in fields:
                 buf[field] = cells[field].get_value()
             setting[vt_symbol] = buf
@@ -496,7 +510,8 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
         """用表格中的方向、持仓范围、目标持仓和最大委托启动交易。"""
         cells: dict = self.cells[vt_symbol]
 
-        params = cells["direction"].get_value()
+        params: dict = cells["direction"].get_value()
+        name: str
         for name in [
             "max_pos",
             "target_pos",
@@ -514,7 +529,7 @@ class ElectronicEyeMonitor(QtWidgets.QTableWidget):
 class ElectronicEyeManager(QtWidgets.QWidget):
     """电子眼总控、批量参数和日志窗口。"""
 
-    signal_log = QtCore.Signal(Event)
+    signal_log: QtCore.Signal = QtCore.Signal(Event)
 
     def __init__(self, option_engine: OptionEngine, portfolio_name: str) -> None:
         """绑定引擎并初始化界面和日志事件。"""
@@ -569,7 +584,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
         max_pos_button: QtWidgets.QPushButton = QtWidgets.QPushButton("设置")
         max_pos_button.clicked.connect(self.set_max_pos_for_all)
 
-        QLabel = QtWidgets.QLabel
+        QLabel: type[QtWidgets.QLabel] = QtWidgets.QLabel
         grid: QtWidgets.QGridLayout = QtWidgets.QGridLayout()
         grid.addWidget(QLabel("价格价差"), 0, 0)
         grid.addWidget(self.price_spread_spin, 0, 1)
@@ -628,6 +643,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
         """把价格价差写到仍可编辑的价格价差框。"""
         price_spread: float = self.price_spread_spin.get_value()
 
+        cells: dict
         for cells in self.algo_monitor.cells.values():
             if cells["price_spread"].isEnabled():
                 cells["price_spread"].setValue(price_spread)
@@ -636,6 +652,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
         """把隐波价差写到仍可编辑的隐波价差框。"""
         volatility_spread: float = self.volatility_spread_spin.get_value()
 
+        cells: dict
         for cells in self.algo_monitor.cells.values():
             if cells["volatility_spread"].isEnabled():
                 cells["volatility_spread"].setValue(volatility_spread)
@@ -644,6 +661,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
         """把方向写到仍可编辑的方向框。"""
         ix: int = self.direction_combo.currentIndex()
 
+        cells: dict
         for cells in self.algo_monitor.cells.values():
             if cells["direction"].isEnabled():
                 cells["direction"].setCurrentIndex(ix)
@@ -652,6 +670,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
         """把最大委托写到仍可编辑的最大委托框。"""
         size: int = self.max_order_size_spin.get_value()
 
+        cells: dict
         for cells in self.algo_monitor.cells.values():
             if cells["max_order_size"].isEnabled():
                 cells["max_order_size"].setValue(size)
@@ -660,6 +679,7 @@ class ElectronicEyeManager(QtWidgets.QWidget):
         """把目标持仓写到仍可编辑的目标持仓框。"""
         pos: int = self.target_pos_spin.get_value()
 
+        cells: dict
         for cells in self.algo_monitor.cells.values():
             if cells["target_pos"].isEnabled():
                 cells["target_pos"].setValue(pos)
@@ -668,17 +688,20 @@ class ElectronicEyeManager(QtWidgets.QWidget):
         """把持仓范围写到仍可编辑的持仓范围框。"""
         pos: int = self.max_pos_spin.get_value()
 
+        cells: dict
         for cells in self.algo_monitor.cells.values():
             if cells["max_pos"].isEnabled():
                 cells["max_pos"].setValue(pos)
 
     def stop_pricing_for_all(self) -> None:
         """停止监控表中每个合约的定价。"""
+        vt_symbol: str
         for vt_symbol in self.algo_monitor.cells.keys():
             self.algo_monitor.stop_algo_pricing(vt_symbol)
 
     def stop_trading_for_all(self) -> None:
         """停止监控表中每个合约的交易。"""
+        vt_symbol: str
         for vt_symbol in self.algo_monitor.cells.keys():
             self.algo_monitor.stop_algo_trading(vt_symbol)
 
@@ -738,6 +761,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         self.chain_symbols = list(self.portfolio.chains.keys())
         self.chain_symbols.sort()
 
+        chain_symbol: str
         for chain_symbol in self.chain_symbols:
             chain: ChainData = self.portfolio.get_chain(chain_symbol)
 
@@ -760,13 +784,15 @@ class PricingVolatilityManager(QtWidgets.QWidget):
             table.setColumnCount(len(labels))
             table.setHorizontalHeaderLabels(labels)
 
+            row: int
+            index: str
             for row, index in enumerate(chain.indexes):
                 index_cell: IndexCell = IndexCell(index)
                 otm_impv_cell: MonitorCell = MonitorCell("")
                 call_impv_cell: MonitorCell = MonitorCell("")
                 put_impv_cell: MonitorCell = MonitorCell("")
 
-                set_func = partial(
+                set_func: Callable[..., None] = partial(
                     self.set_pricing_impv,
                     chain_symbol=chain_symbol,
                     index=index
@@ -801,19 +827,19 @@ class PricingVolatilityManager(QtWidgets.QWidget):
 
                 self.cells[(chain_symbol, index)] = cells
 
-            reset_func = partial(self.reset_pricing_impv, chain_symbol=chain_symbol)
+            reset_func: Callable[..., None] = partial(self.reset_pricing_impv, chain_symbol=chain_symbol)
             button_reset: QtWidgets.QPushButton = QtWidgets.QPushButton("重置")
             button_reset.clicked.connect(reset_func)
 
-            fit_func = partial(self.fit_pricing_impv, chain_symbol=chain_symbol)
+            fit_func: Callable[..., None] = partial(self.fit_pricing_impv, chain_symbol=chain_symbol)
             button_fit: QtWidgets.QPushButton = QtWidgets.QPushButton("拟合")
             button_fit.clicked.connect(fit_func)
 
-            increase_func = partial(self.increase_pricing_impv, chain_symbol=chain_symbol)
+            increase_func: Callable[..., None] = partial(self.increase_pricing_impv, chain_symbol=chain_symbol)
             button_increase: QtWidgets.QPushButton = QtWidgets.QPushButton("+0.1%")
             button_increase.clicked.connect(increase_func)
 
-            decrease_func = partial(self.decrease_pricing_impv, chain_symbol=chain_symbol)
+            decrease_func: Callable[..., None] = partial(self.decrease_pricing_impv, chain_symbol=chain_symbol)
             button_decrease: QtWidgets.QPushButton = QtWidgets.QPushButton("-0.1%")
             button_decrease.clicked.connect(decrease_func)
 
@@ -833,8 +859,8 @@ class PricingVolatilityManager(QtWidgets.QWidget):
 
             self.update_pricing_impv(chain_symbol)
 
-            self.default_foreground = otm_impv_cell.foreground()
-            self.default_background = otm_impv_cell.background()
+            self.default_foreground: QtGui.QBrush = otm_impv_cell.foreground()
+            self.default_background: QtGui.QBrush = otm_impv_cell.background()
 
             table.resizeRowsToContents()
 
@@ -846,6 +872,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
 
     def process_timer_event(self, event: Event) -> None:
         """定时刷新每条期权链的隐波显示。"""
+        chain_symbol: str
         for chain_symbol in self.chain_symbols:
             self.update_chain_impv(chain_symbol)
 
@@ -856,6 +883,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         chain: ChainData = self.portfolio.get_chain(chain_symbol)
         atm_index: str = chain.atm_index
 
+        index: str
         for index in chain.indexes:
             call: OptionData = chain.calls[index]
             put: OptionData = chain.puts[index]
@@ -880,6 +908,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         strike_prices: list = []
         pricing_impvs: list = []
 
+        index: str
         for index in chain.indexes:
             call: OptionData = chain.calls[index]
             put: OptionData = chain.puts[index]
@@ -912,6 +941,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         """
         chain: ChainData = self.portfolio.get_chain(chain_symbol)
 
+        option: OptionData
         for option in chain.options.values():
             option.pricing_impv += 0.001
 
@@ -923,6 +953,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         """
         chain: ChainData = self.portfolio.get_chain(chain_symbol)
 
+        option: OptionData
         for option in chain.options.values():
             option.pricing_impv -= 0.001
 
@@ -945,6 +976,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         chain: ChainData = self.portfolio.get_chain(chain_symbol)
         atm_index: str = chain.atm_index
 
+        index: str
         for index in chain.indexes:
             if index >= atm_index:
                 otm: OptionData = chain.calls[index]
@@ -963,6 +995,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         chain: ChainData = self.portfolio.get_chain(chain_symbol)
         atm_index: str = chain.atm_index
 
+        index: str
         for index in chain.indexes:
             call: OptionData = chain.calls[index]
             put: OptionData = chain.puts[index]
@@ -984,6 +1017,7 @@ class PricingVolatilityManager(QtWidgets.QWidget):
         if current_atm_index:
             old_cells: dict = self.cells[(chain_symbol, current_atm_index)]
 
+            field: str
             for field in ["otm_impv", "call_impv", "put_impv"]:
                 old_cells[field].setForeground(COLOR_WHITE)
                 old_cells[field].setBackground(self.default_background)

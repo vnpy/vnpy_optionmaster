@@ -240,11 +240,13 @@ class ElectronicEyeAlgo:
 
     def cancel_long(self) -> None:
         """撤销全部多头活动委托。"""
+        vt_orderid: str
         for vt_orderid in self.long_active_orderids:
             self.cancel_order(vt_orderid)
 
     def cancel_short(self) -> None:
         """撤销全部空头活动委托。"""
+        vt_orderid: str
         for vt_orderid in self.short_active_orderids:
             self.cancel_order(vt_orderid)
 
@@ -306,7 +308,7 @@ class ElectronicEyeAlgo:
 
         # Check price
         if volume_left > 0 and tick.ask_price_1 <= self.algo_bid_price:
-            volume = min(
+            volume: float = min(
                 volume_left,
                 tick.ask_volume_1,
                 self.max_order_size
@@ -327,7 +329,7 @@ class ElectronicEyeAlgo:
 
         # Check price
         if volume_left > 0 and tick.bid_price_1 >= self.algo_ask_price:
-            volume = min(
+            volume: float = min(
                 volume_left,
                 tick.bid_volume_1,
                 self.max_order_size
